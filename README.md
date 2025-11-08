@@ -1,5 +1,7 @@
 # TR-808 Synth
 
+![TR-808 Synth Screenshot](./assets/screenshot.png)
+
 A simple drum sequencer created with AI in about 30 minutes, inspired by the classic TR-808 but not pretending to replicate the original. Use it freely in your projects!
 
 This project demonstrates the SDD (Spec-Driven Development) approach - a methodology for rapid development using AI agents with structured prompts and templates. For more details on SDD, check out [SDDRush](https://github.com/chernistry/SDDRush) or look at the `/Users/sasha/IdeaProjects/personal_projects/sdd` directory.
