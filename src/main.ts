@@ -170,6 +170,13 @@ const controls = new Controls('controls', {
 const swingSlider = document.getElementById('swing-slider') as HTMLInputElement;
 const swingDisplay = document.getElementById('swing-display') as HTMLElement;
 
+// Initialize swing from slider default
+{
+  const initSwing = parseInt(swingSlider.value, 10) / 100;
+  swingDisplay.textContent = `${swingSlider.value}%`;
+  scheduler.setSwing(initSwing);
+}
+
 swingSlider.addEventListener('input', () => {
   const swing = parseInt(swingSlider.value, 10) / 100;
   swingDisplay.textContent = `${swingSlider.value}%`;

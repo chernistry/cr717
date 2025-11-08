@@ -8,12 +8,13 @@ class Store {
   private listeners: Set<Listener> = new Set();
 
   constructor() {
+    const def = createDefaultPattern();
     this.state = {
-      pattern: createDefaultPattern(), // Use default UK garage pattern
+      pattern: def,
       playback: {
         isPlaying: false,
         currentStep: 0,
-        bpm: 130, // Match default pattern BPM
+        bpm: def.bpm,
       },
     };
   }
