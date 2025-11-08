@@ -53,6 +53,17 @@ class MockOfflineAudioContext extends MockAudioContext {
   }
 }
 
+// Mock localStorage
+const storage = new Map<string, string>();
+global.localStorage = {
+  getItem: (key: string) => storage.get(key) || null,
+  setItem: (key: string, value: string) => storage.set(key, value),
+  removeItem: (key: string) => storage.delete(key),
+  clear: () => storage.clear(),
+  length: 0,
+  key: () => null,
+};
+
 // @ts-expect-error - Mocking global
 global.AudioContext = MockAudioContext;
 // @ts-expect-error - Mocking global
@@ -85,5 +96,13 @@ global.AudioBufferSourceNode = class {
 global.BiquadFilterNode = class {
   connect() {
     return this;
+  }
+};
+// @ts-expect-error - Mocking global
+global.DOMException = class extends Error {
+  name: string;
+  constructor(message: string, name: string) {
+    super(message);
+    this.name = name;
   }
 };

@@ -10,17 +10,39 @@ import { SequencerGrid } from './ui/sequencerGrid';
 import { Visualizer } from './ui/visualizer';
 import { store } from './state/store';
 import { toggleStep } from './state/pattern';
+import { loadPattern, savePattern } from './storage/localStorage';
 
 const scheduler = new AudioScheduler();
 const voiceMap = { BD: playBD, SD: playSD, CH: playCH, OH: playOH, CP: playCP };
+
+// Load saved pattern
+const savedPattern = loadPattern();
+if (savedPattern) {
+  store.setState({ pattern: savedPattern });
+}
 
 // Initialize UI
 const grid = new SequencerGrid('sequencer', {
   onStepToggle: (instrument, step) => {
     const state = store.getState();
-    const updated = toggleStep(state.pattern, instrument as keyof typeof voiceMap, step);
+    const updated = toggleStep(
+      state.pattern,
+      instrument as keyof typeof voiceMap,
+      step
+    );
     store.setState({ pattern: updated });
+    savePattern(updated);
   },
+});
+
+// Restore pattern state in UI
+const initialState = store.getState();
+Object.entries(initialState.pattern.steps).forEach(([instrument, steps]) => {
+  steps.forEach((active, step) => {
+    if (active) {
+      grid.setStepActive(instrument, step, true);
+    }
+  });
 });
 
 const visualizer = new Visualizer((step) => {
