@@ -6,77 +6,77 @@ Input Context
 - Project: tr808-synth
 - Description: # TR-808 Drum Machine - Project Description
 
-## Цель проекта
+## Project Goal
 
-Создать веб-приложение, эмулирующее классическую драм-машину Roland TR-808 с использованием Web Audio API.
+Create a web application that emulates the classic Roland TR-808 drum machine using the Web Audio API.
 
-## Что должно быть
+## Requirements
 
-### Основные звуки (минимум)
-- Bass Drum (BD) - бочка
-- Snare Drum (SD) - малый барабан
-- Closed Hi-Hat (CH) - закрытый хай-хэт
-- Open Hi-Hat (OH) - открытый хай-хэт
-- Clap (CP) - хлопок
+### Core Sounds (minimum)
+- Bass Drum (BD) - kick drum
+- Snare Drum (SD) - snare drum
+- Closed Hi-Hat (CH) - closed hi-hat
+- Open Hi-Hat (OH) - open hi-hat
+- Clap (CP) - clap
 
-### Функциональность
-- **Секвенсор**: 16 шагов (steps) для каждого инструмента
-- **Воспроизведение**: Play/Stop/Reset
-- **Темп**: Регулируемый BPM (60-240)
-- **Паттерны**: Возможность сохранять/загружать паттерны
-- **Визуализация**: Подсветка текущего шага при воспроизведении
+### Functionality
+- **Sequencer**: 16 steps for each instrument
+- **Playback**: Play/Stop/Reset
+- **Tempo**: Adjustable BPM (60-240)
+- **Patterns**: Ability to save/load patterns
+- **Visualization**: Step highlighting during playback
 
-### Технические требования
-- **Frontend**: Vanilla JavaScript или React (на выбор)
-- **Audio**: Web Audio API для синтеза звуков
-- **UI**: Минималистичный интерфейс, напоминающий оригинальный TR-808
-- **Responsive**: Работает на desktop и tablet
+### Technical Requirements
+- **Frontend**: Vanilla JavaScript or React (at choice)
+- **Audio**: Web Audio API for sound synthesis
+- **UI**: Minimal interface reminiscent of the original TR-808
+- **Responsive**: Works on desktop and tablet
 
-## Ограничения
+## Limitations
 
-- Без backend (всё работает в браузере)
-- Без внешних аудио-библиотек (только Web Audio API)
-- Простой UI без сложных анимаций
-- Локальное хранение паттернов (localStorage)
+- No backend (everything runs in the browser)
+- No external audio libraries (Web Audio API only)
+- Simple UI without complex animations
+- Local pattern storage (localStorage)
 
-## Критерии готовности
+## Acceptance Criteria
 
-1. ✅ Все 5 базовых звуков синтезируются и звучат похоже на оригинал
-2. ✅ Секвенсор работает на 16 шагов
-3. ✅ Можно запустить/остановить воспроизведение
-4. ✅ Можно изменить темп (BPM)
-5. ✅ Можно сохранить и загрузить паттерн
-6. ✅ Визуальная индикация текущего шага
-7. ✅ Работает в современных браузерах (Chrome, Firefox, Safari)
+1. ✅ All 5 basic sounds are synthesized and sound similar to the original
+2. ✅ Sequencer works for 16 steps
+3. ✅ Can start/stop playback
+4. ✅ Can change tempo (BPM)
+5. ✅ Can save and load a pattern
+6. ✅ Visual indication of the current step
+7. ✅ Works in modern browsers (Chrome, Firefox, Safari)
 
-## Референсы
+## References
 
-- Оригинальный Roland TR-808
+- Original Roland TR-808
 - Web Audio API documentation
-- Примеры синтеза ударных звуков
+- Examples of drum sound synthesis
 
-## Приоритеты
+## Priorities
 
 **P1 (Must have):**
-- Bass Drum, Snare, Hi-Hat синтез
-- 16-step секвенсор
+- Bass Drum, Snare, Hi-Hat synthesis
+- 16-step sequencer
 - Play/Stop
 
 **P2 (Should have):**
 - Clap, Open Hi-Hat
 - BPM control
-- Визуализация
+- Visualization
 
 **P3 (Nice to have):**
-- Сохранение/загрузка паттернов
-- Дополнительные звуки (Cowbell, Toms)
+- Pattern save/load
+- Additional sounds (Cowbell, Toms)
 - Swing/shuffle
 
-## Примерный scope
+## Scope Estimation
 
-- ~500-800 строк кода
-- 1-2 недели разработки
-- Один разработчик
+- ~500-800 lines of code
+- 1-2 weeks of development
+- One developer
 - Domain: audio-synthesis
 - Tech stack (if any): Node.js/Web Audio API
 - Year: 2025
