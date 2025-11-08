@@ -26,10 +26,13 @@ export default [
         clearInterval: 'readonly',
         global: 'readonly',
         AudioContext: 'readonly',
+        OfflineAudioContext: 'readonly',
+        AudioBuffer: 'readonly',
         OscillatorNode: 'readonly',
         GainNode: 'readonly',
         BiquadFilterNode: 'readonly',
         AudioBufferSourceNode: 'readonly',
+        Float32Array: 'readonly',
       },
     },
     plugins: {
@@ -38,7 +41,10 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/explicit-function-return-type': 'warn',
+      '@typescript-eslint/explicit-function-return-type': [
+        'warn',
+        { allowExpressions: true },
+      ],
     },
   },
   prettier,
