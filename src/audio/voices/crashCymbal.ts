@@ -1,4 +1,4 @@
-export function playCY(ctx: AudioContext, time: number): void {
+export function playCY(ctx: AudioContext, time: number, _params?: any): void {
   const buffer = ctx.createBuffer(1, ctx.sampleRate * 1.0, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {

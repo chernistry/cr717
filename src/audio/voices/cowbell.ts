@@ -1,4 +1,4 @@
-export function playCB(ctx: AudioContext, time: number): void {
+export function playCB(ctx: AudioContext, time: number, _params?: any): void {
   const osc1 = new OscillatorNode(ctx, { type: 'square', frequency: 540 });
   const osc2 = new OscillatorNode(ctx, { type: 'square', frequency: 800 });
 

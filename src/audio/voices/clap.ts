@@ -1,4 +1,4 @@
-export function playCP(ctx: AudioContext, time: number): void {
+export function playCP(ctx: AudioContext, time: number, _params?: any): void {
   const delays = [0, 0.01, 0.02, 0.03];
 
   delays.forEach((delay) => {

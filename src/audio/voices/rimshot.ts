@@ -1,4 +1,4 @@
-export function playRS(ctx: AudioContext, time: number): void {
+export function playRS(ctx: AudioContext, time: number, _params?: any): void {
   const osc1 = new OscillatorNode(ctx, { type: 'square', frequency: 180 });
   const osc2 = new OscillatorNode(ctx, { type: 'square', frequency: 330 });
 

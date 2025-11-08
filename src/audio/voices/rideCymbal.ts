@@ -1,4 +1,4 @@
-export function playRD(ctx: AudioContext, time: number): void {
+export function playRD(ctx: AudioContext, time: number, _params?: any): void {
   const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {

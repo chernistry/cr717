@@ -15,9 +15,11 @@ import { playCB } from './audio/voices/cowbell';
 import { Controls } from './ui/controls';
 import { SequencerGrid } from './ui/sequencerGrid';
 import { Visualizer } from './ui/visualizer';
+import { VoiceParamsPanel } from './ui/voiceParamsPanel';
 import { store } from './state/store';
 import { toggleStep, createDefaultPattern } from './state/pattern';
 import { loadPattern, savePattern } from './storage/localStorage';
+import { voiceParams } from './state/voiceParams';
 
 const scheduler = new AudioScheduler();
 const voiceMap = {
@@ -33,21 +35,6 @@ const voiceMap = {
   CY: playCY,
   RD: playRD,
   CB: playCB,
-};
-
-const voiceLevels = {
-  BD: 1.0,
-  SD: 1.0,
-  LT: 0.9,
-  MT: 0.9,
-  HT: 0.9,
-  RS: 0.8,
-  CP: 0.6,
-  CH: 0.7,
-  OH: 0.8,
-  CY: 0.6,
-  RD: 0.5,
-  CB: 0.7,
 };
 
 const savedPattern = loadPattern();
@@ -66,6 +53,20 @@ const grid = new SequencerGrid('sequencer', {
     store.setState({ pattern: updated });
     savePattern(updated);
   },
+});
+
+// Voice params panel
+const paramsPanel = new VoiceParamsPanel('voice-params');
+
+// Add click handlers to instrument labels
+document.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  if (target.classList.contains('instrument-label')) {
+    const voice = target.textContent?.trim();
+    if (voice) {
+      paramsPanel.selectVoice(voice);
+    }
+  }
 });
 
 function loadPatternToUI(): void {
@@ -120,7 +121,8 @@ const controls = new Controls('controls', {
       Object.entries(currentState.pattern.steps).forEach(([instrument, steps]) => {
         if (steps[step]) {
           const voice = voiceMap[instrument as keyof typeof voiceMap];
-          voice(ctx, time);
+          const params = voiceParams[instrument as keyof typeof voiceParams];
+          voice(ctx, time, params);
         }
       });
     });
@@ -152,7 +154,8 @@ const controls = new Controls('controls', {
           Object.entries(currentState.pattern.steps).forEach(([instrument, steps]) => {
             if (steps[step]) {
               const voice = voiceMap[instrument as keyof typeof voiceMap];
-              voice(ctx, time);
+              const params = voiceParams[instrument as keyof typeof voiceParams];
+              voice(ctx, time, params);
             }
           });
         });
@@ -172,33 +175,6 @@ swingSlider.addEventListener('input', () => {
   swingDisplay.textContent = `${swingSlider.value}%`;
   scheduler.setSwing(swing);
 });
-
-function initMixer(): void {
-  const mixer = document.getElementById('mixer');
-  if (!mixer) return;
-
-  Object.entries(voiceLevels).forEach(([voice, level]) => {
-    const control = document.createElement('div');
-    control.className = 'voice-control';
-    control.innerHTML = `
-      <span class="voice-name">${voice}</span>
-      <input type="range" min="0" max="100" value="${level * 100}" 
-             data-voice="${voice}" aria-label="${voice} level">
-      <span class="voice-level">${Math.round(level * 100)}%</span>
-    `;
-
-    const slider = control.querySelector('input') as HTMLInputElement;
-    const display = control.querySelector('.voice-level') as HTMLElement;
-
-    slider.addEventListener('input', () => {
-      const value = parseInt(slider.value, 10) / 100;
-      voiceLevels[voice as keyof typeof voiceLevels] = value;
-      display.textContent = `${Math.round(value * 100)}%`;
-    });
-
-    mixer.appendChild(control);
-  });
-}
 
 document.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement) return;
@@ -301,7 +277,6 @@ function updateFPS(): void {
   requestAnimationFrame(updateFPS);
 }
 
-initMixer();
 const initialState = store.getState();
 updateStatus(`Ready - ${initialState.pattern.name}`);
 requestAnimationFrame(updateFPS);
@@ -315,5 +290,6 @@ document.getElementById('help-overlay')?.addEventListener('click', (e) => {
 });
 
 console.log(`TR-808 initialized - ${initialState.pattern.name} @ ${initialState.pattern.bpm} BPM`);
-console.log('12 voices: BD, SD, LT, MT, HT, RS, CP, CH, OH, CY, RD, CB');
+console.log('12 voices with parameters: BD, SD, LT, MT, HT, RS, CP, CH, OH, CY, RD, CB');
+console.log('Click voice label to edit parameters');
 console.log('Press ? for shortcuts, D for default pattern');

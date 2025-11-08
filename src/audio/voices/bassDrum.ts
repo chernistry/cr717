@@ -1,17 +1,36 @@
-export function playBD(ctx: AudioContext, time: number): void {
-  const osc = new OscillatorNode(ctx, { type: 'sine', frequency: 150 });
-  const gain = new GainNode(ctx, { gain: 1.0 });
+export interface BDParams {
+  level?: number;
+  tone?: number;
+  decay?: number;
+  tuning?: number;
+}
 
-  osc.connect(gain).connect(ctx.destination);
+const defaults: Required<BDParams> = {
+  level: 1.0,
+  tone: 0.5,
+  decay: 0.35,
+  tuning: 1.0,
+};
 
-  // Pitch envelope: 150Hz → 50Hz over 80ms
-  osc.frequency.setValueAtTime(150, time);
-  osc.frequency.exponentialRampToValueAtTime(50, time + 0.08);
+export function playBD(ctx: AudioContext, time: number, params: BDParams = {}): void {
+  const p = { ...defaults, ...params };
 
-  // Amplitude envelope: 1.0 → 0.0001 over 350ms
-  gain.gain.setValueAtTime(1.0, time);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
+  const osc = new OscillatorNode(ctx, { type: 'sine', frequency: 150 * p.tuning });
+  const filter = new BiquadFilterNode(ctx, {
+    type: 'lowpass',
+    frequency: 200 + p.tone * 800,
+    Q: 1,
+  });
+  const gain = new GainNode(ctx, { gain: p.level });
+
+  osc.connect(filter).connect(gain).connect(ctx.destination);
+
+  osc.frequency.setValueAtTime(150 * p.tuning, time);
+  osc.frequency.exponentialRampToValueAtTime(50 * p.tuning, time + 0.08);
+
+  gain.gain.setValueAtTime(p.level, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + p.decay);
 
   osc.start(time);
-  osc.stop(time + 0.5);
+  osc.stop(time + p.decay + 0.1);
 }

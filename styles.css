@@ -179,6 +179,13 @@ main {
   padding: var(--space-xs);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.instrument-label:hover {
+  background: var(--color-accent);
+  color: white;
 }
 
 .step-button {
@@ -223,6 +230,8 @@ main {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
 }
 
 .panel {
@@ -271,6 +280,46 @@ main {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   min-width: 35px;
+  text-align: right;
+}
+
+/* Voice Parameters Panel */
+.voice-params-panel {
+  padding: var(--space-md);
+}
+
+.params-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.param-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.param-control label {
+  font-size: var(--font-size-xs);
+  text-transform: capitalize;
+  min-width: 50px;
+  color: var(--color-text-secondary);
+}
+
+.param-control input[type="range"] {
+  flex: 1;
+  width: auto;
+}
+
+.param-value {
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  color: var(--color-accent);
+  min-width: 40px;
   text-align: right;
 }
 
@@ -375,6 +424,7 @@ footer {
   .sidebar {
     flex-direction: row;
     overflow-x: auto;
+    max-height: none;
   }
   
   .panel {

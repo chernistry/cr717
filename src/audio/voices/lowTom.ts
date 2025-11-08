@@ -1,4 +1,4 @@
-export function playLT(ctx: AudioContext, time: number): void {
+export function playLT(ctx: AudioContext, time: number, _params?: any): void {
   const osc = new OscillatorNode(ctx, { type: 'sine', frequency: 65 });
   const gain = new GainNode(ctx, { gain: 1.0 });
 
