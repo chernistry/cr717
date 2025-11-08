@@ -6,12 +6,25 @@ import prettier from 'eslint-config-prettier';
 export default [
   js.configs.recommended,
   {
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module',
+      },
+      globals: {
+        console: 'readonly',
+        document: 'readonly',
+        window: 'readonly',
+        AudioContext: 'readonly',
+        OscillatorNode: 'readonly',
+        GainNode: 'readonly',
+        BiquadFilterNode: 'readonly',
+        AudioBufferSourceNode: 'readonly',
       },
     },
     plugins: {
