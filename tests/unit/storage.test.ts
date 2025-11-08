@@ -1,45 +1,68 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  savePattern,
-  loadPattern,
-  clearPattern,
+  saveBank,
+  loadBank,
+  clearBank,
 } from '../../src/storage/localStorage';
-import { createEmptyPattern } from '../../src/state/pattern';
+import { createEmptyPattern, createDefaultPattern } from '../../src/state/pattern';
+import type { PatternBank } from '../../src/state/types';
 
 describe('localStorage', () => {
   beforeEach(() => {
-    clearPattern();
+    clearBank();
   });
 
-  it('should save and load pattern', () => {
-    const pattern = createEmptyPattern();
-    pattern.name = 'Test Pattern';
-    pattern.bpm = 140;
+  it('should save and load bank', () => {
+    const bank: PatternBank = {
+      patterns: {
+        A: createDefaultPattern(),
+        B: createEmptyPattern(),
+        C: createEmptyPattern(),
+        D: createEmptyPattern(),
+        E: createEmptyPattern(),
+        F: createEmptyPattern(),
+        G: createEmptyPattern(),
+        H: createEmptyPattern(),
+      },
+      currentPattern: 'A',
+    };
 
-    savePattern(pattern);
-    const loaded = loadPattern();
+    saveBank(bank);
+    const loaded = loadBank();
 
     expect(loaded).not.toBeNull();
-    expect(loaded?.name).toBe('Test Pattern');
-    expect(loaded?.bpm).toBe(140);
+    expect(loaded?.currentPattern).toBe('A');
+    expect(loaded?.patterns.A.name).toBe('Atmospheric UK Garage — Classic 2‑Step');
   });
 
-  it('should return null if no pattern saved', () => {
-    const loaded = loadPattern();
+  it('should return null if no bank saved', () => {
+    const loaded = loadBank();
     expect(loaded).toBeNull();
   });
 
   it('should handle corrupted data', () => {
-    localStorage.setItem('tr808:v1:pattern', 'invalid json');
-    const loaded = loadPattern();
+    localStorage.setItem('tr808:v1:bank', 'invalid json');
+    const loaded = loadBank();
     expect(loaded).toBeNull();
   });
 
-  it('should clear pattern', () => {
-    const pattern = createEmptyPattern();
-    savePattern(pattern);
-    clearPattern();
-    const loaded = loadPattern();
+  it('should clear bank', () => {
+    const bank: PatternBank = {
+      patterns: {
+        A: createDefaultPattern(),
+        B: createEmptyPattern(),
+        C: createEmptyPattern(),
+        D: createEmptyPattern(),
+        E: createEmptyPattern(),
+        F: createEmptyPattern(),
+        G: createEmptyPattern(),
+        H: createEmptyPattern(),
+      },
+      currentPattern: 'A',
+    };
+    saveBank(bank);
+    clearBank();
+    const loaded = loadBank();
     expect(loaded).toBeNull();
   });
 });

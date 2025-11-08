@@ -16,11 +16,12 @@ import { Controls } from './ui/controls';
 import { SequencerGrid } from './ui/sequencerGrid';
 import { Visualizer } from './ui/visualizer';
 import { VoiceParamsPanel } from './ui/voiceParamsPanel';
-import { Mixer } from './ui/mixer';
+import { PatternSelector } from './ui/patternSelector';
 import { store } from './state/store';
-import { toggleStep, createDefaultPattern } from './state/pattern';
-import { loadPattern, savePattern } from './storage/localStorage';
+import { toggleStep, createEmptyPattern, DEFAULT_BANK } from './state/pattern';
+import { loadBank, saveBank } from './storage/localStorage';
 import { voiceParams } from './state/voiceParams';
+import type { Pattern } from './state/types';
 
 const scheduler = new AudioScheduler();
 const voiceMap = {
@@ -38,29 +39,65 @@ const voiceMap = {
   CB: playCB,
 };
 
-const savedPattern = loadPattern();
-if (savedPattern) {
-  store.setState({ pattern: savedPattern });
+const savedBank = loadBank();
+if (savedBank) {
+  store.setState({ bank: savedBank });
 }
 
 const grid = new SequencerGrid('sequencer', {
   onStepToggle: (instrument, step) => {
     const state = store.getState();
-    const updated = toggleStep(
-      state.pattern,
-      instrument as keyof typeof voiceMap,
-      step
-    );
-    store.setState({ pattern: updated });
-    savePattern(updated);
+    const currentPattern = state.bank.patterns[state.bank.currentPattern];
+    if (!currentPattern) return;
+    const updated = toggleStep(currentPattern, instrument as keyof typeof voiceMap, step);
+    state.bank.patterns[state.bank.currentPattern] = updated;
+    store.setState({ bank: state.bank });
+    saveBank(state.bank);
   },
 });
 
 // Voice params panel
 const paramsPanel = new VoiceParamsPanel('voice-params');
 
-// Mixer panel
-const mixer = new Mixer('mixer');
+// Pattern selector
+const patternSelector = new PatternSelector('pattern-selector', (pattern) => {
+  const state = store.getState();
+  state.bank.currentPattern = pattern;
+  store.setState({ bank: state.bank });
+  loadPatternToUI();
+  saveBank(state.bank);
+});
+
+// Pattern selector events
+let clipboard: Pattern | null = null;
+
+document.getElementById('pattern-selector')?.addEventListener('copy', () => {
+  const state = store.getState();
+  clipboard = JSON.parse(JSON.stringify(state.bank.patterns[state.bank.currentPattern]));
+  updateStatus(`Copied pattern ${state.bank.currentPattern}`);
+});
+
+document.getElementById('pattern-selector')?.addEventListener('paste', () => {
+  if (!clipboard) {
+    updateStatus('Nothing to paste');
+    return;
+  }
+  const state = store.getState();
+  state.bank.patterns[state.bank.currentPattern] = JSON.parse(JSON.stringify(clipboard));
+  store.setState({ bank: state.bank });
+  saveBank(state.bank);
+  loadPatternToUI();
+  updateStatus(`Pasted to pattern ${state.bank.currentPattern}`);
+});
+
+document.getElementById('pattern-selector')?.addEventListener('clear', () => {
+  const state = store.getState();
+  state.bank.patterns[state.bank.currentPattern] = createEmptyPattern();
+  store.setState({ bank: state.bank });
+  saveBank(state.bank);
+  loadPatternToUI();
+  updateStatus(`Cleared pattern ${state.bank.currentPattern}`);
+});
 
 // Add click handlers to instrument labels
 document.addEventListener('click', (e) => {
@@ -75,14 +112,16 @@ document.addEventListener('click', (e) => {
 
 function loadPatternToUI(): void {
   const state = store.getState();
+  const pattern = state.bank.patterns[state.bank.currentPattern];
+  if (!pattern) return;
 
-  Object.keys(state.pattern.steps).forEach((instrument) => {
+  Object.keys(pattern.steps).forEach((instrument) => {
     for (let step = 0; step < 16; step++) {
       grid.setStepActive(instrument, step, false);
     }
   });
 
-  Object.entries(state.pattern.steps).forEach(([instrument, steps]) => {
+  Object.entries(pattern.steps).forEach(([instrument, steps]) => {
     steps.forEach((active, step) => {
       if (active) {
         grid.setStepActive(instrument, step, true);
@@ -93,17 +132,31 @@ function loadPatternToUI(): void {
   const bpmSlider = document.getElementById('bpm-slider') as HTMLInputElement;
   const bpmDisplay = document.getElementById('bpm-display') as HTMLElement;
   if (bpmSlider && bpmDisplay) {
-    bpmSlider.value = state.pattern.bpm.toString();
-    bpmDisplay.textContent = state.pattern.bpm.toString();
+    bpmSlider.value = pattern.bpm.toString();
+    bpmDisplay.textContent = pattern.bpm.toString();
   }
 
-  updateStatus(`Loaded: ${state.pattern.name}`);
+  // Apply pattern swing if provided
+  const swingSlider = document.getElementById('swing-slider') as HTMLInputElement;
+  const swingDisplay = document.getElementById('swing-display') as HTMLElement;
+  if (pattern.swing != null && swingSlider && swingDisplay) {
+    const pct = Math.round((pattern.swing ?? 0) * 100);
+    swingSlider.value = String(pct);
+    swingDisplay.textContent = `${pct}%`;
+    scheduler.setSwing(pattern.swing ?? 0);
+  }
+
+  patternSelector.setCurrentPattern(state.bank.currentPattern);
+  updateStatus(`Pattern ${state.bank.currentPattern}: ${pattern.name}`);
 }
 
 function loadDefaultPattern(): void {
-  const defaultPattern = createDefaultPattern();
-  store.setState({ pattern: defaultPattern });
-  savePattern(defaultPattern);
+  const bank = {
+    patterns: JSON.parse(JSON.stringify(DEFAULT_BANK)),
+    currentPattern: 'A',
+  } as const;
+  store.setState({ bank: bank as any });
+  saveBank(store.getState().bank);
   loadPatternToUI();
 }
 
@@ -122,7 +175,9 @@ const controls = new Controls('controls', {
 
     scheduler.start(ctx, bpm, (step, time) => {
       const currentState = store.getState();
-      Object.entries(currentState.pattern.steps).forEach(([instrument, steps]) => {
+      const pattern = currentState.bank.patterns[currentState.bank.currentPattern];
+      if (!pattern) return;
+      Object.entries(pattern.steps).forEach(([instrument, steps]) => {
         if (steps[step]) {
           const voice = voiceMap[instrument as keyof typeof voiceMap];
           const params = voiceParams[instrument as keyof typeof voiceParams];
@@ -155,7 +210,9 @@ const controls = new Controls('controls', {
       if (ctx) {
         scheduler.start(ctx, bpm, (step, time) => {
           const currentState = store.getState();
-          Object.entries(currentState.pattern.steps).forEach(([instrument, steps]) => {
+          const pattern = currentState.bank.patterns[currentState.bank.currentPattern];
+          if (!pattern) return;
+          Object.entries(pattern.steps).forEach(([instrument, steps]) => {
             if (steps[step]) {
               const voice = voiceMap[instrument as keyof typeof voiceMap];
               const params = voiceParams[instrument as keyof typeof voiceParams];
@@ -264,7 +321,12 @@ function toggleTheme(): void {
   const newTheme = current === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', newTheme);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+  if (btn) {
+    const icon = btn.querySelector('i');
+    if (icon) {
+      icon.className = newTheme === 'dark' ? 'ph ph-moon' : 'ph ph-sun';
+    }
+  }
 }
 
 function updateStatus(text: string): void {
@@ -289,7 +351,14 @@ function updateFPS(): void {
 }
 
 const initialState = store.getState();
-updateStatus(`Ready - ${initialState.pattern.name}`);
+const initialPattern = initialState.bank.patterns[initialState.bank.currentPattern];
+if (initialPattern) {
+  updateStatus(`Ready - Pattern ${initialState.bank.currentPattern}: ${initialPattern.name}`);
+  console.log(`TR-808 initialized - Pattern ${initialState.bank.currentPattern}: ${initialPattern.name} @ ${initialPattern.bpm} BPM`);
+} else {
+  updateStatus('Ready');
+  console.log('TR-808 initialized');
+}
 requestAnimationFrame(updateFPS);
 
 document.getElementById('help-btn')?.addEventListener('click', toggleHelp);
@@ -300,7 +369,6 @@ document.getElementById('help-overlay')?.addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeHelp();
 });
 
-console.log(`TR-808 initialized - ${initialState.pattern.name} @ ${initialState.pattern.bpm} BPM`);
 console.log('12 voices with parameters: BD, SD, LT, MT, HT, RS, CP, CH, OH, CY, RD, CB');
 console.log('Click voice label to edit parameters');
 console.log('Press ? for shortcuts, D for default pattern');

@@ -1,6 +1,7 @@
 export interface Pattern {
   name: string;
   bpm: number;
+  swing?: number; // 0.0–0.75 (optional)
   steps: {
     BD: boolean[];
     SD: boolean[];
@@ -17,6 +18,11 @@ export interface Pattern {
   };
 }
 
+export interface PatternBank {
+  patterns: Record<string, Pattern>; // A-H
+  currentPattern: string; // 'A'
+}
+
 export interface PlaybackState {
   isPlaying: boolean;
   currentStep: number;
@@ -24,6 +30,6 @@ export interface PlaybackState {
 }
 
 export interface AppState {
-  pattern: Pattern;
+  bank: PatternBank;
   playback: PlaybackState;
 }

@@ -26,6 +26,7 @@ export function createDefaultPattern(): Pattern {
   return {
     name: 'Atmospheric UK Garage — Classic 2‑Step',
     bpm: 134,
+    swing: 0.55,
     steps: {
       // BD (kick): 1, syncopation on the & of 2 and & of 3
       // idx: 0 (1), 6 (2&), 10 (3&)
@@ -62,6 +63,158 @@ export function createDefaultPattern(): Pattern {
     },
   };
 }
+
+export const DEFAULT_BANK: Record<string, Pattern> = {
+  // A — Classic 2‑Step (as above)
+  A: createDefaultPattern(),
+
+  // B — Skippy Hats (busier CH with off‑grid feel via swing), sparse OH
+  B: {
+    name: 'UKG — Skippy Hats',
+    bpm: 134,
+    swing: 0.6,
+    steps: {
+      BD: [true, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, true, false, true, false, true, true, false, true, false, true, true, false, true, false, true],
+      OH: [false, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, true, false, false, false, false, false, false, false, false, true, false],
+    },
+  },
+
+  // C — Deep Sub Roll (low toms as ghost subs, subtle rimshots)
+  C: {
+    name: 'UKG — Deep Sub Roll',
+    bpm: 132,
+    swing: 0.55,
+    steps: {
+      BD: [true, false, false, false, false, false, true, false, true, false, false, false, false, true, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, false, true, true, false, false, true, false, true, false, true, true, false, false, true, false],
+      OH: [false, false, false, false, false, false, false, true, false, false, false, false, false, true, false, false],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+
+  // D — Ghost Snare & Rim (pre‑4 rimshot, subtle ghosting)
+  D: {
+    name: 'UKG — Ghost Snare & Rim',
+    bpm: 134,
+    swing: 0.58,
+    steps: {
+      BD: [true, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, false, true, true, false, false, true, false, true, false, true, true, false, false, true, false],
+      OH: [false, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+
+  // E — Wide OH Shuffle (broader OH pattern, hats slightly sparser)
+  E: {
+    name: 'UKG — Wide OH Shuffle',
+    bpm: 136,
+    swing: 0.55,
+    steps: {
+      BD: [true, false, false, false, false, false, true, false, true, false, false, false, false, true, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      OH: [false, false, false, true, false, false, false, true, false, false, false, true, false, false, false, true],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+
+  // F — Break‑Step (RS accents + busy CH, sparse BD flips)
+  F: {
+    name: 'UKG — Break‑Step Accents',
+    bpm: 135,
+    swing: 0.6,
+    steps: {
+      BD: [true, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, true, false, true, false, true, true, false, true, false, true, true, false, true, false, true],
+      OH: [false, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, true, false, false, false, false, false, false, false, false, true, false],
+    },
+  },
+
+  // G — Dark Garage (sparser, heavier swing, fewer OH)
+  G: {
+    name: 'UKG — Dark Garage',
+    bpm: 132,
+    swing: 0.62,
+    steps: {
+      BD: [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, false, false, true, false, true, false, false, true, false, false, true, false, false, true, false],
+      OH: [false, false, false, false, false, false, false, true, false, false, false, false, false, true, false, false],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      CB: [false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+
+  // H — Dubby Minimal (ride texture; minimal BD flips)
+  H: {
+    name: 'UKG — Dubby Minimal',
+    bpm: 130,
+    swing: 0.54,
+    steps: {
+      BD: [true, false, false, false, false, true, false, false, true, false, false, false, false, false, false, false],
+      SD: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      LT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      MT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      HT: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RS: [false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      CP: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      CH: [true, false, true, true, false, false, true, false, true, false, true, true, false, false, true, false],
+      OH: [false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, true],
+      CY: [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      RD: [false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      CB: [false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+};
 
 export function toggleStep(
   pattern: Pattern,
