@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +8,94 @@
 </head>
 <body>
   <div id="app">
-    <h1>TR-808 Drum Machine</h1>
-    <div id="controls">
-      <!-- Controls will be added in Ticket 08 -->
-    </div>
-    <div id="sequencer">
-      <!-- Sequencer grid will be added in Ticket 07 -->
+    <header role="banner">
+      <div class="logo">TR-808</div>
+      
+      <div class="transport" role="group" aria-label="Transport controls">
+        <div id="controls"></div>
+      </div>
+      
+      <div class="control-group">
+        <label for="bpm-slider">BPM</label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="range" id="bpm-slider" min="60" max="240" value="120" aria-label="Tempo">
+          <span id="bpm-display" class="value-display" aria-live="polite">120</span>
+        </div>
+      </div>
+      
+      <button class="control-btn secondary" id="theme-toggle" aria-label="Toggle theme">
+        🌙
+      </button>
+    </header>
+    
+    <main role="main">
+      <section class="sequencer-section" aria-label="Step sequencer">
+        <h2 class="section-title">Step Sequencer</h2>
+        <div id="sequencer"></div>
+      </section>
+      
+      <aside class="sidebar">
+        <div class="panel" role="region" aria-label="Mixer">
+          <h3 class="panel-title">Mixer</h3>
+          <div class="mixer-strip" id="mixer"></div>
+        </div>
+        
+        <div class="panel" role="region" aria-label="Info">
+          <h3 class="panel-title">Info</h3>
+          <div style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6;">
+            <p><strong>5 Voices:</strong> BD, SD, CH, OH, CP</p>
+            <p><strong>16 Steps</strong> per pattern</p>
+            <p><strong>Auto-save</strong> to localStorage</p>
+            <p style="margin-top: 8px;">Press <kbd>?</kbd> for shortcuts</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+    
+    <footer role="contentinfo">
+      <div class="status">
+        <span id="status-text">Ready</span>
+        <span>•</span>
+        <span id="perf-text">FPS: --</span>
+      </div>
+      <button class="help-btn" id="help-btn" aria-label="Show keyboard shortcuts">
+        Keyboard Shortcuts (?)
+      </button>
+    </footer>
+  </div>
+  
+  <div class="help-overlay" id="help-overlay" role="dialog" aria-labelledby="help-title" aria-modal="true">
+    <div class="help-content">
+      <h2 id="help-title">Keyboard Shortcuts</h2>
+      
+      <h3>Transport</h3>
+      <ul>
+        <li><span>Play/Stop</span> <kbd>Space</kbd></li>
+        <li><span>Increase BPM</span> <kbd>+</kbd></li>
+        <li><span>Decrease BPM</span> <kbd>-</kbd></li>
+      </ul>
+      
+      <h3>Navigation</h3>
+      <ul>
+        <li><span>Select voice 1-5</span> <kbd>1</kbd> - <kbd>5</kbd></li>
+        <li><span>Toggle step</span> <kbd>Enter</kbd></li>
+        <li><span>Next step</span> <kbd>→</kbd></li>
+        <li><span>Previous step</span> <kbd>←</kbd></li>
+      </ul>
+      
+      <h3>Other</h3>
+      <ul>
+        <li><span>Toggle theme</span> <kbd>T</kbd></li>
+        <li><span>Show help</span> <kbd>?</kbd></li>
+        <li><span>Close help</span> <kbd>Esc</kbd></li>
+      </ul>
+      
+      <button class="control-btn" onclick="document.getElementById('help-overlay').classList.remove('visible')" style="margin-top: 16px; width: 100%;">
+        Close
+      </button>
     </div>
   </div>
+  
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

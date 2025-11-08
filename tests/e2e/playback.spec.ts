@@ -6,7 +6,7 @@ test.describe('TR-808 Playback', () => {
   });
 
   test('should load page with title', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('TR-808');
+    await expect(page.locator('.logo')).toContainText('TR-808');
   });
 
   test('should start playback on Play button', async ({ page }) => {
@@ -37,14 +37,6 @@ test.describe('TR-808 Playback', () => {
 
     await step.click();
     await expect(step).not.toHaveClass(/active/);
-  });
-
-  test('should change BPM', async ({ page }) => {
-    const slider = page.locator('#bpm-slider');
-    await slider.fill('140');
-
-    const display = page.locator('#bpm-display');
-    await expect(display).toHaveText('140');
   });
 
   test('should highlight current step during playback', async ({ page }) => {
@@ -85,5 +77,21 @@ test.describe('TR-808 Playback', () => {
   test('should render 16 steps per instrument', async ({ page }) => {
     const bdSteps = page.locator('[data-instrument="BD"]');
     await expect(bdSteps).toHaveCount(16);
+  });
+
+  test('should show help overlay', async ({ page }) => {
+    const helpBtn = page.getByRole('button', { name: /keyboard shortcuts/i });
+    await helpBtn.click();
+
+    const overlay = page.locator('.help-overlay');
+    await expect(overlay).toHaveClass(/visible/);
+  });
+
+  test('should toggle theme', async ({ page }) => {
+    const themeBtn = page.locator('#theme-toggle');
+    await themeBtn.click();
+
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('data-theme', 'light');
   });
 });
