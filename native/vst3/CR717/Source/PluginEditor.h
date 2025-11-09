@@ -3,6 +3,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
 #include "DesignTokens.h"
+#include "LookAndFeelCR717.h"
+#include "UiGrid.h"
 #include "CustomKnob.h"
 #include "CustomFader.h"
 #include "LevelMeter.h"
@@ -74,6 +76,8 @@ private:
                            const char* decayID, const char* toneID);
     
     void updateStepButtons();
+    
+    LookAndFeelCR717 lookAndFeel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CR717Editor)
 };

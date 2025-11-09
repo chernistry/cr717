@@ -19,6 +19,8 @@ using namespace DesignTokens;
 CR717Editor::CR717Editor(CR717Processor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
+    setLookAndFeel(&lookAndFeel);
+    
     setSize(1200, 800);
     setResizable(true, true);
     setResizeLimits(1200, 800, 1800, 1200);
@@ -172,6 +174,7 @@ CR717Editor::CR717Editor(CR717Processor& p)
 
 CR717Editor::~CR717Editor()
 {
+    setLookAndFeel(nullptr);
     stopTimer();
 }
 
@@ -291,48 +294,50 @@ void CR717Editor::paintFooter(juce::Graphics& g, juce::Rectangle<int> area)
 void CR717Editor::resized()
 {
     auto bounds = getLocalBounds();
-    const int pad = Spacing::md;
+    const int pad = ui::tokens::spacing::MD;
+    
+    UiGrid grid(getWidth());
     
     // Header (60px)
     auto headerArea = bounds.removeFromTop(60);
     
-    // Preset browser (50px)
-    auto presetArea = bounds.removeFromTop(50).reduced(pad, Spacing::sm);
+    // Preset browser (50px) - spans 8 columns
+    auto presetArea = bounds.removeFromTop(50).reduced(pad, ui::tokens::spacing::SM);
     prevPresetButton.setBounds(presetArea.removeFromLeft(40));
-    presetArea.removeFromLeft(Spacing::sm);
+    presetArea.removeFromLeft(ui::tokens::spacing::SM);
     presetSelector.setBounds(presetArea.removeFromLeft(300));
-    presetArea.removeFromLeft(Spacing::sm);
+    presetArea.removeFromLeft(ui::tokens::spacing::SM);
     nextPresetButton.setBounds(presetArea.removeFromLeft(40));
-    presetArea.removeFromLeft(Spacing::lg);
+    presetArea.removeFromLeft(ui::tokens::spacing::LG);
     copyButton.setBounds(presetArea.removeFromLeft(60));
-    pasteButton.setBounds(presetArea.removeFromLeft(60).translated(Spacing::sm, 0));
-    clearButton.setBounds(presetArea.removeFromLeft(60).translated(Spacing::sm * 2, 0));
+    pasteButton.setBounds(presetArea.removeFromLeft(60).translated(ui::tokens::spacing::SM, 0));
+    clearButton.setBounds(presetArea.removeFromLeft(60).translated(ui::tokens::spacing::SM * 2, 0));
     themeButton.setBounds(getWidth() - 80 - pad, 10, 80, 30);
     
     // Sequencer section (100px)
-    auto seqArea = bounds.removeFromTop(100).reduced(pad, Spacing::sm);
+    auto seqArea = bounds.removeFromTop(100).reduced(pad, ui::tokens::spacing::SM);
     
     // Transport row
     auto transportRow = seqArea.removeFromTop(40);
     playButton.setBounds(transportRow.removeFromLeft(50));
-    transportRow.removeFromLeft(Spacing::sm);
+    transportRow.removeFromLeft(ui::tokens::spacing::SM);
     stopButton.setBounds(transportRow.removeFromLeft(50));
-    transportRow.removeFromLeft(Spacing::lg);
+    transportRow.removeFromLeft(ui::tokens::spacing::LG);
     bpmLabel.setBounds(transportRow.removeFromLeft(40));
-    transportRow.removeFromLeft(Spacing::sm);
+    transportRow.removeFromLeft(ui::tokens::spacing::SM);
     bpmSlider.setBounds(transportRow.removeFromLeft(200));
     
     // MIDI drag (right side)
     midiDragSource.setBounds(getWidth() - 130 - pad, 60 + 50 + 10, 120, 35);
     
     // Step grid row
-    seqArea.removeFromTop(Spacing::sm);
+    seqArea.removeFromTop(ui::tokens::spacing::SM);
     auto stepRow = seqArea.removeFromTop(40);
     voiceSelector.setBounds(stepRow.removeFromLeft(100));
-    stepRow.removeFromLeft(Spacing::md);
+    stepRow.removeFromLeft(pad);
     
     // 16 step buttons
-    int stepWidth = (stepRow.getWidth() - 15 * 4) / 16; // 4px gaps
+    int stepWidth = (stepRow.getWidth() - 15 * 4) / 16;
     for (int i = 0; i < 16; ++i)
     {
         stepButtons[i].setBounds(stepRow.removeFromLeft(stepWidth));
@@ -347,12 +352,12 @@ void CR717Editor::resized()
     
     // Master controls (right side, 120px wide)
     auto masterArea = bounds.removeFromRight(120);
-    masterArea.removeFromTop(Spacing::md);
+    masterArea.removeFromTop(pad);
     masterLevelLabel.setBounds(masterArea.removeFromTop(25));
-    masterArea.removeFromTop(Spacing::sm);
+    masterArea.removeFromTop(ui::tokens::spacing::SM);
     auto meterAndSlider = masterArea.removeFromTop(200);
     masterMeter.setBounds(meterAndSlider.removeFromLeft(20));
-    meterAndSlider.removeFromLeft(Spacing::sm);
+    meterAndSlider.removeFromLeft(ui::tokens::spacing::SM);
     masterLevelSlider.setBounds(meterAndSlider);
     
     bounds.removeFromRight(pad);
