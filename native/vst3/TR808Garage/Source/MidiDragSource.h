@@ -8,7 +8,7 @@ class MidiDragSource : public juce::Component
 public:
     MidiDragSource()
     {
-        setSize(100, 30);
+        setSize(120, 30);
     }
     
     void setMidiFile(const juce::MidiFile& file)
@@ -26,16 +26,23 @@ public:
         g.drawText("⬇ Drag MIDI", getLocalBounds(), juce::Justification::centred);
     }
     
+    void mouseDown(const juce::MouseEvent&) override
+    {
+        dragStartPos = getMouseXYRelative();
+    }
+    
     void mouseDrag(const juce::MouseEvent& e) override
     {
-        if (e.getDistanceFromDragStart() > 5 && !isDragging)
+        if (!isDragging && e.getDistanceFromDragStart() > 5)
         {
             isDragging = true;
             
-            // Create temporary MIDI file
-            juce::File tempFile = juce::File::getSpecialLocation(juce::File::tempDirectory)
-                                    .getChildFile("TR808_Pattern.mid");
+            // Create temporary MIDI file with timestamp
+            auto tempDir = juce::File::getSpecialLocation(juce::File::tempDirectory);
+            auto timestamp = juce::Time::getCurrentTime().toMilliseconds();
+            tempFile = tempDir.getChildFile("TR808_Pattern_" + juce::String(timestamp) + ".mid");
             
+            // Write MIDI file
             juce::FileOutputStream stream(tempFile);
             if (stream.openedOk())
             {
@@ -43,15 +50,12 @@ public:
                 stream.flush();
             }
             
-            // Start drag operation
+            // Perform external drag & drop
             juce::StringArray files;
             files.add(tempFile.getFullPathName());
             
-            auto* container = juce::DragAndDropContainer::findParentDragContainerFor(this);
-            if (container != nullptr)
-            {
-                container->startDragging(juce::var(files), this);
-            }
+            // This is the key: use performExternalDragDropOfFiles for OS-level drag
+            juce::DragAndDropContainer::performExternalDragDropOfFiles(files, false, this, nullptr);
         }
     }
     
@@ -62,6 +66,8 @@ public:
     
 private:
     juce::MidiFile midiFile;
+    juce::File tempFile;
+    juce::Point<int> dragStartPos;
     bool isDragging = false;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiDragSource)

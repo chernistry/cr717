@@ -19,9 +19,9 @@ using namespace DesignTokens;
 TR808GarageEditor::TR808GarageEditor(TR808GarageProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(1100, 720);
+    setSize(1200, 800);
     setResizable(true, true);
-    setResizeLimits(1100, 720, 1650, 1080);
+    setResizeLimits(1200, 800, 1800, 1200);
     
     // Preset selector (combo box for 36 presets)
     presetSelector.setColour(juce::ComboBox::backgroundColourId, Colors::bgSecondary);
@@ -291,94 +291,112 @@ void TR808GarageEditor::paintFooter(juce::Graphics& g, juce::Rectangle<int> area
 void TR808GarageEditor::resized()
 {
     auto bounds = getLocalBounds();
+    const int pad = Spacing::md;
     
-    // Header
+    // Header (60px)
     auto headerArea = bounds.removeFromTop(60);
     
-    // Preset browser area
-    auto patternArea = bounds.removeFromTop(50).reduced(Spacing::md, Spacing::sm);
+    // Preset browser (50px)
+    auto presetArea = bounds.removeFromTop(50).reduced(pad, Spacing::sm);
+    prevPresetButton.setBounds(presetArea.removeFromLeft(40));
+    presetArea.removeFromLeft(Spacing::sm);
+    presetSelector.setBounds(presetArea.removeFromLeft(300));
+    presetArea.removeFromLeft(Spacing::sm);
+    nextPresetButton.setBounds(presetArea.removeFromLeft(40));
+    presetArea.removeFromLeft(Spacing::lg);
+    copyButton.setBounds(presetArea.removeFromLeft(60));
+    pasteButton.setBounds(presetArea.removeFromLeft(60).translated(Spacing::sm, 0));
+    clearButton.setBounds(presetArea.removeFromLeft(60).translated(Spacing::sm * 2, 0));
+    themeButton.setBounds(getWidth() - 80 - pad, 10, 80, 30);
     
-    // Preset navigation
-    prevPresetButton.setBounds(patternArea.removeFromLeft(40));
-    patternArea.removeFromLeft(Spacing::sm);
+    // Sequencer section (100px)
+    auto seqArea = bounds.removeFromTop(100).reduced(pad, Spacing::sm);
     
-    // Preset selector (combo box)
-    presetSelector.setBounds(patternArea.removeFromLeft(300));
-    patternArea.removeFromLeft(Spacing::sm);
+    // Transport row
+    auto transportRow = seqArea.removeFromTop(40);
+    playButton.setBounds(transportRow.removeFromLeft(50));
+    transportRow.removeFromLeft(Spacing::sm);
+    stopButton.setBounds(transportRow.removeFromLeft(50));
+    transportRow.removeFromLeft(Spacing::lg);
+    bpmLabel.setBounds(transportRow.removeFromLeft(40));
+    transportRow.removeFromLeft(Spacing::sm);
+    bpmSlider.setBounds(transportRow.removeFromLeft(200));
     
-    nextPresetButton.setBounds(patternArea.removeFromLeft(40));
-    patternArea.removeFromLeft(Spacing::lg);
+    // MIDI drag (right side)
+    midiDragSource.setBounds(getWidth() - 130 - pad, 60 + 50 + 10, 120, 35);
     
-    // Copy/Paste/Clear buttons
-    copyButton.setBounds(patternArea.removeFromLeft(60));
-    patternArea.removeFromLeft(Spacing::sm);
-    pasteButton.setBounds(patternArea.removeFromLeft(60));
-    patternArea.removeFromLeft(Spacing::sm);
-    clearButton.setBounds(patternArea.removeFromLeft(60));
+    // Step grid row
+    seqArea.removeFromTop(Spacing::sm);
+    auto stepRow = seqArea.removeFromTop(40);
+    voiceSelector.setBounds(stepRow.removeFromLeft(100));
+    stepRow.removeFromLeft(Spacing::md);
     
-    // Sequencer area
-    auto seqArea = bounds.removeFromTop(80).reduced(Spacing::md, Spacing::sm);
-    
-    // Transport controls
-    playButton.setBounds(seqArea.removeFromLeft(40));
-    seqArea.removeFromLeft(Spacing::sm);
-    stopButton.setBounds(seqArea.removeFromLeft(40));
-    seqArea.removeFromLeft(Spacing::lg);
-    
-    // BPM control
-    bpmLabel.setBounds(seqArea.removeFromLeft(40));
-    seqArea.removeFromLeft(Spacing::sm);
-    bpmSlider.setBounds(seqArea.removeFromLeft(150));
-    seqArea.removeFromLeft(Spacing::lg);
-    
-    // Voice selector
-    voiceSelector.setBounds(seqArea.removeFromLeft(80));
-    seqArea.removeFromLeft(Spacing::sm);
-    
-    // Step buttons (16 steps)
-    int stepWidth = 30;
+    // 16 step buttons
+    int stepWidth = (stepRow.getWidth() - 15 * 4) / 16; // 4px gaps
     for (int i = 0; i < 16; ++i)
     {
-        stepButtons[i].setBounds(seqArea.removeFromLeft(stepWidth));
-        if (i < 15) seqArea.removeFromLeft(2);
+        stepButtons[i].setBounds(stepRow.removeFromLeft(stepWidth));
+        if (i < 15) stepRow.removeFromLeft(4);
     }
     
-    // MIDI drag button (right side)
-    midiDragSource.setBounds(getWidth() - 120 - Spacing::md, 60 + 50 + Spacing::sm, 120, 30);
-    
-    // Theme button (top right)
-    themeButton.setBounds(getWidth() - 80 - Spacing::md, Spacing::md, 80, 30);
-    
-    // Footer
+    // Footer (30px)
     auto footerArea = bounds.removeFromBottom(30);
     
-    // Master (right side)
-    int masterX = getWidth() - 100 - Spacing::md;
-    masterLevelLabel.setBounds(masterX, bounds.getY() + Spacing::md, 100, 20);
-    masterLevelSlider.setBounds(masterX + 20, bounds.getY() + Spacing::md + 25, 60, 150);
-    masterMeter.setBounds(masterX, bounds.getY() + Spacing::md + 25, 15, 150);
+    // Main content area - Voice grid
+    bounds.reduce(pad, pad);
     
-    // Voice controls in 4x3 grid
+    // Master controls (right side, 120px wide)
+    auto masterArea = bounds.removeFromRight(120);
+    masterArea.removeFromTop(Spacing::md);
+    masterLevelLabel.setBounds(masterArea.removeFromTop(25));
+    masterArea.removeFromTop(Spacing::sm);
+    auto meterAndSlider = masterArea.removeFromTop(200);
+    masterMeter.setBounds(meterAndSlider.removeFromLeft(20));
+    meterAndSlider.removeFromLeft(Spacing::sm);
+    masterLevelSlider.setBounds(meterAndSlider);
+    
+    bounds.removeFromRight(pad);
+    
+    // Voice grid (4x3)
+    int voiceWidth = (bounds.getWidth() - 3 * pad) / 4;
+    int voiceHeight = (bounds.getHeight() - 2 * pad) / 3;
+    
     auto layoutVoice = [&](VoiceControls& vc, int col, int row) {
-        int voiceWidth = (bounds.getWidth() - Spacing::md * 5 - 120) / 4;
-        int voiceHeight = 140;
-        int x = bounds.getX() + Spacing::md + col * (voiceWidth + Spacing::md);
-        int y = bounds.getY() + Spacing::md + row * (voiceHeight + Spacing::md);
+        int x = bounds.getX() + col * (voiceWidth + pad);
+        int y = bounds.getY() + row * (voiceHeight + pad);
         
-        vc.nameLabel.setBounds(x + 10, y + Spacing::sm, voiceWidth - 20, 25);
-        vc.meter.setBounds(x + 5, y + 40, 8, 90);
+        vc.nameLabel.setBounds(x + 10, y + 10, voiceWidth - 20, 25);
+        vc.meter.setBounds(x + 5, y + 45, 10, voiceHeight - 60);
         
-        int knobY = y + 40;
-        int knobSpacing = 50;
+        int knobY = y + 45;
+        int knobSize = 50;
+        int knobSpacing = (voiceWidth - 20 - knobSize * 4) / 3;
         int knobX = x + 20;
         
-        if (vc.levelAttachment) vc.levelSlider.setBounds(knobX, knobY, 45, 70);
-        if (vc.tuneAttachment) vc.tuneSlider.setBounds(knobX + knobSpacing, knobY, 45, 70);
-        if (vc.decayAttachment) vc.decaySlider.setBounds(knobX + knobSpacing * 2, knobY, 45, 70);
-        if (vc.toneAttachment) vc.toneSlider.setBounds(knobX + knobSpacing * 3, knobY, 45, 70);
+        if (vc.levelAttachment) vc.levelSlider.setBounds(knobX, knobY, knobSize, knobSize + 20);
+        knobX += knobSize + knobSpacing;
+        if (vc.tuneAttachment) vc.tuneSlider.setBounds(knobX, knobY, knobSize, knobSize + 20);
+        knobX += knobSize + knobSpacing;
+        if (vc.decayAttachment) vc.decaySlider.setBounds(knobX, knobY, knobSize, knobSize + 20);
+        knobX += knobSize + knobSpacing;
+        if (vc.toneAttachment) vc.toneSlider.setBounds(knobX, knobY, knobSize, knobSize + 20);
     };
     
     // Layout all 12 voices in 4x3 grid
+    layoutVoice(bdControls, 0, 0);
+    layoutVoice(sdControls, 1, 0);
+    layoutVoice(ltControls, 2, 0);
+    layoutVoice(mtControls, 3, 0);
+    
+    layoutVoice(htControls, 0, 1);
+    layoutVoice(rsControls, 1, 1);
+    layoutVoice(cpControls, 2, 1);
+    layoutVoice(chControls, 3, 1);
+    
+    layoutVoice(ohControls, 0, 2);
+    layoutVoice(cyControls, 1, 2);
+    layoutVoice(rdControls, 2, 2);
+    layoutVoice(cbControls, 3, 2);
     layoutVoice(bdControls, 0, 0);
     layoutVoice(sdControls, 1, 0);
     layoutVoice(ltControls, 2, 0);
@@ -402,6 +420,8 @@ void TR808GarageEditor::timerCallback()
     if (currentProgram + 1 != presetSelector.getSelectedId())
     {
         presetSelector.setSelectedId(currentProgram + 1, juce::dontSendNotification);
+        updateStepButtons(); // Update sequencer UI when preset changes
+        bpmSlider.setValue(processor.getSequencer().getBPM(), juce::dontSendNotification);
         repaint();
     }
     

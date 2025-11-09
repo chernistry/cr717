@@ -236,8 +236,8 @@ CMakeFiles/TR808Garage_All.dir/clean:
 # Target rules for target CMakeFiles/TR808Garage_VST3.dir
 
 # All Build rule for target.
-CMakeFiles/TR808Garage_VST3.dir/all: CMakeFiles/TR808Garage.dir/all
 CMakeFiles/TR808Garage_VST3.dir/all: CMakeFiles/juce_vst3_helper.dir/all
+CMakeFiles/TR808Garage_VST3.dir/all: CMakeFiles/TR808Garage.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/TR808Garage_VST3.dir/build.make CMakeFiles/TR808Garage_VST3.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/TR808Garage_VST3.dir/build.make CMakeFiles/TR808Garage_VST3.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/CMakeFiles --progress-num=21,22,23,24,25,26,27,28,29,30,31,32,33 "Built target TR808Garage_VST3"
