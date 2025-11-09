@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 
 // MIDI note mapping (GM Drum Map compatible)
 // C1 (36) = BD, D1 (38) = SD, F#1 (42) = CH, A#1 (46) = OH, D#1 (39) = CP, C#1 (37) = RS
@@ -24,6 +25,11 @@ void TR808GarageProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 
 void TR808GarageProcessor::releaseResources()
 {
+}
+
+juce::AudioProcessorEditor* TR808GarageProcessor::createEditor()
+{
+    return new TR808GarageEditor(*this);
 }
 
 bool TR808GarageProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
