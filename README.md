@@ -67,6 +67,14 @@ cmake --build build --config Release
 # Linux: ~/.vst3/
 ```
 
+Alternatively, you can use the automated build and install script:
+
+```bash
+./build-and-install-vst.sh
+```
+
+This script will automatically build the plugin and install it to the correct system directory for your platform (macOS, Linux, or Windows).
+
 ### Web Application Keyboard Shortcuts:
 - Space: Play/Stop
 - +/-: Increase/Decrease BPM by 5
