@@ -1,0 +1,3 @@
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/juce-populate.dir
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/edit_cache.dir
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/rebuild_cache.dir

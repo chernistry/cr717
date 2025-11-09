@@ -1,0 +1,14 @@
+# Target labels
+ juce-populate
+# Source files and their labels
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/juce-populate
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/juce-populate.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/CMakeFiles/juce-populate-complete.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-build.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-configure.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-download.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-install.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-mkdir.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-patch.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-test.rule
+/Users/sasha/IdeaProjects/personal_projects/tr808-synth/native/vst3/TR808Garage/build/_deps/juce-subbuild/juce-populate-prefix/src/juce-populate-stamp/juce-populate-update.rule

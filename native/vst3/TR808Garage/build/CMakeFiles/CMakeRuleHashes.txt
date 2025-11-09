@@ -1,0 +1,2 @@
+# Hashes of file build rules.
+7b3c84ede321c67a455779c1b01c9324 TR808Garage_artefacts/JuceLibraryCode/TR808Garage_VST3/PkgInfo
