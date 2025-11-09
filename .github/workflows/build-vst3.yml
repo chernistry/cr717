@@ -1,0 +1,44 @@
+name: Build VST3
+
+on:
+  push:
+    branches: [master, feat/30-*]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Cache JUCE
+        uses: actions/cache@v4
+        with:
+          path: |
+            native/vst3/TR808Garage/build/_deps
+          key: ${{ runner.os }}-juce-8.0.4
+      
+      - name: Configure CMake
+        working-directory: native/vst3/TR808Garage
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+      
+      - name: Build
+        working-directory: native/vst3/TR808Garage
+        run: cmake --build build --config Release
+      
+      - name: Validate Structure
+        working-directory: native/vst3/TR808Garage
+        run: |
+          VST3_PATH="build/TR808Garage_artefacts/Release/VST3/TR-808 Garage.vst3"
+          test -f "$VST3_PATH/Contents/MacOS/TR-808 Garage" || exit 1
+          test -f "$VST3_PATH/Contents/Info.plist" || exit 1
+          file "$VST3_PATH/Contents/MacOS/TR-808 Garage"
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TR808Garage-macOS-Universal
+          path: native/vst3/TR808Garage/build/TR808Garage_artefacts/Release/VST3/TR-808 Garage.vst3
+          retention-days: 30
