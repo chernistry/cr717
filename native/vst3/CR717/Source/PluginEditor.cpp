@@ -19,6 +19,8 @@ using namespace DesignTokens;
 CR717Editor::CR717Editor(CR717Processor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
+    setLookAndFeel(&lookAndFeel);
+    
     setSize(1200, 800);
     setResizable(true, true);
     setResizeLimits(1200, 800, 1800, 1200);
@@ -172,6 +174,7 @@ CR717Editor::CR717Editor(CR717Processor& p)
 
 CR717Editor::~CR717Editor()
 {
+    setLookAndFeel(nullptr);
     stopTimer();
 }
 

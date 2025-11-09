@@ -14,6 +14,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
+# Generate UI tokens header from JSON
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Source/ui_tokens.hpp
+    COMMAND ${CMAKE_COMMAND} -E env python3 
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/ui/generate_tokens.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/ui/tokens.json
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source/ui_tokens.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/resources/ui/tokens.json
+            ${CMAKE_CURRENT_SOURCE_DIR}/resources/ui/generate_tokens.py
+    COMMENT "Generating ui_tokens.hpp from tokens.json"
+)
+
+add_custom_target(GenerateTokens DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/ui_tokens.hpp)
+
 # Plugin definition
 juce_add_plugin(CR717
     COMPANY_NAME "TR808"
@@ -29,6 +43,8 @@ juce_add_plugin(CR717
     COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Synth Drum
 )
+
+add_dependencies(CR717 GenerateTokens)
 
 target_sources(CR717 PRIVATE
     Source/PluginProcessor.cpp
