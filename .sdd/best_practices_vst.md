@@ -1,226 +1,224 @@
-# Best Practices Guide — VST/AU инструмент в 2025 (для проекта cr717)
+Looking at the file `best_practices_vst.md`, I can see it's mostly in English already, but there are several Russian sections that need translation. Since you're in ask mode, I'll provide the fully translated version for you to copy and apply. Here's the complete file with all Russian text translated to English:
+
+```1:227:tr808-synth/.sdd/best_practices_vst.md
+# Best Practices Guide — VST/AU instrument in 2025 (for project cr717)
 
 ## 1. TL;DR
 
-* Формат по умолчанию: **VST3 + AU (macOS)**. VST2 — EOL. VST3 SDK — **MIT-лицензия** → проще дистрибуция. Добавляйте **CLAP** как optional. ([Ableton Help][1])
-* Фреймворк: **JUCE 7/8** или **iPlug2**. JUCE — быстрый старт и готовые модули DSP/GUI; iPlug2 — лёгкий, гибкий. ([JUCE][2])
-* Реал-тайм: в аудио-потоке **никаких аллокаций/локов/IO**; гасим денормалы (**ScopedNoDenormals**). ([docs.juce.com][3])
-* Автоматизация: **sample-accurate** в VST3; параметр-сглаживание (**SmoothedValue**). ([GitHub][4])
-* Дистрибуция macOS: **code sign + hardened runtime + notarization**; Universal2 (arm64+x86_64). ([Moonbase][5])
-* Пути установки: **VST3 →** `C:\Program Files\Common Files\VST3`, **AU →** `/Library/Audio/Plug-Ins/Components`. ([Steinberg Help Center][6])
-* Совместимость DAW: Ableton Live (macOS) = **VST3 и AU**, Windows = **VST3**. Не рассчитывайте на VST2. ([JUCE][7])
-* Тестирование: **pluginval** в CI + **auval/Logic** на macOS. ([GitHub][8])
-* Производительность: бюджет на аудио-блок без «джиттера»; избегать денормалов, алиасинга → **Oversampling**. ([docs.juce.com][9])
-* Security/Supply chain: SLSA-уровни, актуальный **OWASP Top 10 (2025 RC1)** фокус на мисконфиге; подпись/проверка артефактов. ([SLSA][10])
+* Default format: **VST3 + AU (macOS)**. VST2 — EOL. VST3 SDK — **MIT license** → easier distribution. Add **CLAP** as optional. ([Ableton Help][1])
+* Framework: **JUCE 7/8** or **iPlug2**. JUCE — fast start and ready modules DSP/GUI; iPlug2 — lightweight, flexible. ([JUCE][2])
+* Real-time: in audio-stream **no allocations/locks/IO**; suppress denormals (**ScopedNoDenormals**). ([docs.juce.com][3])
+* Automation: **sample-accurate** in VST3; parameter-smoothing (**SmoothedValue**). ([GitHub][4])
+* Distribution macOS: **code sign + hardened runtime + notarization**; Universal2 (arm64+x86_64). ([Moonbase][5])
+* Installation paths: **VST3 →** `C:\Program Files\Common Files\VST3`, **AU →** `/Library/Audio/Plug-Ins/Components`. ([Steinberg Help Center][6])
+* DAW compatibility: Ableton Live (macOS) = **VST3 and AU**, Windows = **VST3**. Do not count on VST2. ([JUCE][7])
+* Testing: **pluginval** in CI + **auval/Logic** on macOS. ([GitHub][8])
+* Performance: budget for audio-block without "jitter"; avoid denormals, aliasing → **Oversampling**. ([docs.juce.com][9])
+* Security/Supply chain: SLSA-levels, actual **OWASP Top 10 (2025 RC1)** focus on misconfiguration; signature/verification of artifacts. ([SLSA][10])
 
 ---
 
-## 2. Ландшафт — что новое в 2025
+## 2. Landscape — what new in 2025
 
-* **VST3 SDK → MIT**: упрощены юридические риски и интеграции. ([Ableton Help][1])
-* **JUCE**: активная поддержка OS/DAW и план **JUCE 8**; зрелая CMake-сборка. ([JUCE][11])
-* **CLAP** набрал критическую массу: Bitwig, u-he, FL Studio 24, Reaper и др.; открытая MIT-лицензия; мультипоточность, MIDI 2.0-friendly. Ableton Live пока без CLAP. ([u-he][12])
-* **MIDI 2.0/UMP**: CoreMIDI поддерживает Universal MIDI Packet; закладывайте адаптер. ([Apple Developer][13])
-* **macOS дистрибуция**: обязательны hardened runtime + notarization (`notarytool`). ([JUCE][14])
-* **Безопасность цепочки поставки**: SLSA/провананс сборок стал нормой. ([SLSA][10])
-
----
-
-## 3. Архитектурные паттерны
-
-### Pattern A — **C++ плагин (MVP): JUCE VST3 + AU**
-
-**Когда**: быстрый выход в Ableton/Logic/Reaper; минимальный риск.
-**Шаги**: JUCE Audio Plug-In → CMake → модули `juce_audio_processors`, `juce_dsp`; целевые форматы VST3/AU.
-**Плюсы**: единая кодовая база, готовые DSP-утилиты, SmoothedValue/Oversampling, кросс-DAW. **Минусы**: коммерческая лицензия для коммерц. релизов. ([JUCE][2])
-**Опции позже**: CLAP через clap-juce-extensions; MIDI 2.0; AAX. ([u-he][12])
-
-### Pattern B — **Лёгкая рамка (Scale-up): iPlug2 VST3/AU/CLAP**
-
-**Когда**: нужен лёгкий рантайм, тонкая настройка GUI/конкурентности, WebAssembly-ветка.
-**Миграция из A**: перенести DSP ядро и параметры, переписать GUI слой. ([GitHub][15])
+* **VST3 SDK → MIT**: simplified legal risks and integrations. ([Ableton Help][1])
+* **JUCE**: active support OS/DAW and plan **JUCE 8**; mature CMake-build. ([JUCE][11])
+* **CLAP** gained critical mass: Bitwig, u-he, FL Studio 24, Reaper and others; open MIT license; multithreading, MIDI 2.0-friendly. Ableton Live still without CLAP. ([u-he][12])
+* **MIDI 2.0/UMP**: CoreMIDI supports Universal MIDI Packet; lay adapter. ([Apple Developer][13])
+* **macOS distribution**: mandatory hardened runtime + notarization (`notarytool`). ([JUCE][14])
+* **Security of supply chain**: SLSA/provenance of builds became norm. ([SLSA][10])
 
 ---
 
-## 4. Priority 1 — Реал-тайм аудио и корректность DSP
+## 3. Architectural patterns
 
-**Почему**: стабильный аудио-поток без дропов — ключевая цель.
-**Scope**: процессинг, параметры, автоматизация, денормалы, антиалиасинг.
-**Решения**:
+### Pattern A — **C++ plugin (MVP): JUCE VST3 + AU**
 
-* Без аллокаций, lock-free, без IO/логов в аудио-потоке.
-* Смягчение параметров: `juce::SmoothedValue` для всех управляемых параметров, особенно частот/гейнов. ([JUCE][16])
-* Sample-accurate автоматизация в VST3: обрабатывайте event-лист со смещениями. ([GitHub][4])
-* Денормалы: `juce::ScopedNoDenormals` в `processBlock`. ([docs.juce.com][3])
-* Антиалиасинг нелинейностей: `juce::dsp::Oversampling` (выбор FIR/IIR по латентности/фазе). ([docs.juce.com][9])
-  **Имплементация (шаги)**:
+**When**: fast entry to Ableton/Logic/Reaper; minimal risk.
+**Steps**: JUCE Audio Plug-In → CMake → modules `juce_audio_processors`, `juce_dsp`; target formats VST3/AU.
+**Pluses**: single code base, ready DSP-utilities, SmoothedValue/Oversampling, cross-DAW. **Minuses**: commercial license for commercial releases. ([JUCE][2])
+**Options later**: CLAP through clap-juce-extensions; MIDI 2.0; AAX. ([u-he][12])
 
-1. Добавьте `ScopedNoDenormals guard;` в начале `processBlock`. ([docs.juce.com][3])
-2. Для каждого `AudioParameterFloat` заведите `SmoothedValue`, обновляйте в `prepareToPlay` и тикайте в цикле семплов/блоков. ([JUCE][16])
-3. VST3: итерируйте `IParameterChanges` и применяйте изменения со sample offset. ([GitHub][4])
-4. Для сатурации/драйва — оберните нелинейность в Oversampling x2–x4; выставьте `setLatencySamples` по `getLatencyInSamples()`. ([docs.juce.com][9])
+### Pattern B — **Lightweight frame (Scale-up): iPlug2 VST3/AU/CLAP**
+
+**When**: need lightweight runtime, fine tuning GUI/concurrency, WebAssembly-branch.
+**Migration from A**: transfer DSP core and parameters, rewrite GUI layer. ([GitHub][15])
+
+---
+
+## 4. Priority 1 — Real-time audio and correctness DSP
+
+**Why**: stable audio-stream without drops — key goal.
+**Scope**: processing, parameters, automation, denormals, anti-aliasing.
+**Solutions**:
+
+* No allocations, lock-free, without IO/logs in audio-stream.
+* Parameter smoothing: `juce::SmoothedValue` for all managed parameters, especially frequencies/gains. ([JUCE][16])
+* Sample-accurate automation in VST3: process event-list with offsets. ([GitHub][4])
+* Denormals: `juce::ScopedNoDenormals` in `processBlock`. ([docs.juce.com][3])
+* Anti-aliasing nonlinearities: `juce::dsp::Oversampling` (choice FIR/IIR by latency/phase). ([docs.juce.com][9])
+  **Implementation (steps)**:
+
+1. Add `ScopedNoDenormals guard;` in beginning `processBlock`. ([docs.juce.com][3])
+2. For each `AudioParameterFloat` start `SmoothedValue`, update in `prepareToPlay` and tick in cycle samples/blocks. ([JUCE][16])
+3. VST3: iterate `IParameterChanges` and apply changes with sample offset. ([GitHub][4])
+4. For saturation/drive — wrap nonlinearity in Oversampling x2–x4; set `setLatencySamples` by `getLatencyInSamples()`. ([docs.juce.com][9])
    **Guardrails & SLOs**:
 
-* XRuns = 0 при 48kHz/64-sample buffer; отклонение времени блока ≤25% p95.
-* Аудио-поток без аллокаций; целевой CPU <10% на 8-голосном паттерне.
+* XRuns = 0 at 48kHz/64-sample buffer; deviation of block time ≤25% p95.
+* Audio-stream without allocations; target CPU <10% on 8-voice pattern.
   **Failure modes → recovery**:
-* Пики CPU при тишине → включите denormal flush; проверьте IIR-ветви. ([JUCE][17])
-* Щелчки при автом. → увеличить время сглаживания или перейти на sample-accurate путь. ([JUCE][18])
+* CPU peaks at silence → enable denormal flush; check IIR-branches. ([JUCE][17])
+* Clicks at automation → increase smoothing time or switch to sample-accurate path. ([JUCE][18])
 
 ---
 
-## 5. Priority 2 — Дистрибуция и совместимость DAW
+## 5. Priority 2 — Distribution and DAW compatibility
 
-**Почему**: простой инстал, минимум тикетов поддержки.
-**Scope**: форматы, пути, подписание, notarization.
-**Решения**:
+**Why**: simple install, minimum support tickets.
+**Scope**: formats, paths, signing, notarization.
+**Solutions**:
 
-* Форматы: VST3 для Windows/macOS; AU для macOS; CLAP опционально. Ableton Live: VST3/AU на macOS, VST3 на Windows. ([JUCE][7])
-* Пути установки: `C:\Program Files\Common Files\VST3`; `/Library/Audio/Plug-Ins/Components`. ([Steinberg Help Center][6])
+* Formats: VST3 for Windows/macOS; AU for macOS; CLAP optional. Ableton Live: VST3/AU on macOS, VST3 on Windows. ([JUCE][7])
+* Installation paths: `C:\Program Files\Common Files\VST3`; `/Library/Audio/Plug-Ins/Components`. ([Steinberg Help Center][6])
 * macOS: Developer ID, hardened runtime, notarization (`xcrun notarytool`). ([JUCE][14])
-  **Шаги**:
+  **Steps**:
 
-1. Подписать:
+1. Sign:
 
 ```bash
 codesign --deep --force --timestamp --options runtime \
   --sign "Developer ID Application: Your Co" "My808.vst3"
 ```
 
-2. Упаковать в `.pkg` и отправить на нотаризацию:
+2. Package in `.pkg` and send for notarization:
 
 ```bash
 xcrun notarytool submit My808.pkg --keychain-profile "AC_PROFILE" --wait
 ```
 
-3. Проверка: Logic/Live видят плагин; AU проходит `auval`. ([JUCE][14])
-   **SLOs**: установка <1 мин; плагин появляется в DAW после первого скана.
+3. Check: Logic/Live see the plugin; AU passes `auval`. ([JUCE][14])
+   **SLOs**: installation <1 min; plugin appears in DAW after first scan.
 
 ---
 
-## 6. Priority 3 — MIDI 2.0 и расширения
+## 6. Priority 3 — MIDI 2.0 and extensions
 
-**Почему**: долговременная совместимость и выразительность.
-**Решения**:
+**Why**: long-term compatibility and expressiveness.
+**Solutions**:
 
-* Спроектируйте слой событий так, чтобы легко добавить **MIDI 2.0/UMP**. На macOS CoreMIDI уже поддерживает UMP. ([Apple Developer][13])
-* Рассмотрите **CLAP** для пер-нотовой модуляции и лучшей многопоточности. ([u-he][12])
-  **Шаги**: абстрагируйте MIDI как «note-events + per-note params», не жестко привязываясь к MIDI 1.0.
+* Design the event layer so that it's easy to add **MIDI 2.0/UMP**. On macOS CoreMIDI already supports UMP. ([Apple Developer][13])
+* Consider **CLAP** for per-note modulation and better multithreading. ([u-he][12])
+  **Steps**: abstract MIDI as "note-events + per-note params", without hard-binding to MIDI 1.0.
 
 ---
 
-## 7. Тестовая стратегия
+## 7. Testing strategy
 
-* **Unit**: DSP-ядро отдельно от хост-API; тесты фильтров/огибающих.
-* **Integration**: host-sim через **pluginval** headless. ([GitHub][8])
-* **E2E**: загрузка в AudioPluginHost/Logic/Live; пресеты/автоматизация. ([JUCE][19])
-* **Performance**: профилирование по блокам; тест «тихий хвост» на денормалы.
-* **Security**: SBOM, зависимостям — скан; проверка подписей артефактов.
+* **Unit**: DSP-core separate from host-API; tests for filters/envelopes.
+* **Integration**: host-sim through **pluginval** headless. ([GitHub][8])
+* **E2E**: loading in AudioPluginHost/Logic/Live; presets/automation. ([JUCE][19])
+* **Performance**: profiling per blocks; test "quiet tail" for denormals.
+* **Security**: SBOM, dependency scan; verification of artifact signatures.
 
 ---
 
 ## 8. Observability & Ops
 
-* **Метрики**: время обработки блока p50/p95, кол-во параметр-ивентов, отчёты об исключениях UI.
-* **Логи**: только в debug, вне аудио-потока.
-* **Алерты**: падения при скане хоста, провал notarization.
+* **Metrics**: block processing time p50/p95, number of parameter-events, UI exception reports.
+* **Logs**: only in debug, outside audio-stream.
+* **Alerts**: crashes during host scan, notarization failure.
 
 ---
 
 ## 9. Security Best Practices
 
-* **Подпись/нотаризация** для macOS; на Windows — код-подпись. ([JUCE][14])
-* **SLSA**: как минимум L1–L2 (провананс сборок, репродьюсабельность). ([SLSA][10])
-* **OWASP Top 10 2025 RC1**: акцент на Security Misconfiguration — храните пути/доступы в конфиге релиз-сборки, не используйте сетевые вызовы без необходимости. ([OWASP Foundation][20])
-* **Зависимости**: фиксированные версии JUCE/iPlug2/VST3 SDK; воспроизводимые билды.
+* **Signature/notarization** for macOS; code-signing on Windows. ([JUCE][14])
+* **SLSA**: at least L1–L2 (build provenance, reproducibility). ([SLSA][10])
+* **OWASP Top 10 2025 RC1**: focus on Security Misconfiguration — store paths/access in release-build config, avoid network calls without necessity. ([OWASP Foundation][20])
+* **Dependencies**: fixed versions JUCE/iPlug2/VST3 SDK; reproducible builds.
 
 ---
 
 ## 10. Performance & Cost
 
-* **Бюджеты**: при 48 kHz / 64 samples — p95 обработка блока ≤0.5× буфера; CPU <10% на типовой машине.
-* **Оптимизация**: SIMD (SSE/NEON) через JUCE dsp; избегать денормалов; разумный Oversampling (2–4×). ([docs.juce.com][9])
-* **Профилирование**: стресс-автомация, «silence tail».
+* **Budgets**: at 48 kHz / 64 samples — p95 block processing ≤0.5× buffer; CPU <10% on typical machine.
+* **Optimization**: SIMD (SSE/NEON) through JUCE dsp; avoid denormals; reasonable Oversampling (2–4×). ([docs.juce.com][9])
+* **Profiling**: stress-automation, "silence tail".
 
 ---
 
-## 11. CI/CD Pipeline (минимум)
+## 11. CI/CD Pipeline (minimum)
 
-* **Сборка**: GitHub Actions `macos-14`, `windows-latest`; CMake.
-* **Валидация**: `pluginval --strictness-level 8` на собранных бинарях. ([GitHub][8])
-* **Подпись/Нотаризация**: шаги codesign/notarytool для macOS. ([JUCE][14])
-* **Релизы**: артефакты `.vst3` + `.component` + установщики.
-* Референс по CI для аудио-плагинов. ([Moonbase][5])
+* **Build**: GitHub Actions `macos-14`, `windows-latest`; CMake.
+* **Validation**: `pluginval --strictness-level 8` on built binaries. ([GitHub][8])
+* **Signature/Notarization**: codesign/notarytool steps for macOS. ([JUCE][14])
+* **Releases**: artifacts `.vst3` + `.component` + installers.
+* Reference for CI for audio plugins. ([Moonbase][5])
 
 ---
 
 ## 12. Code Quality Standards
 
-* **Стиль**: современный C++17/20, RAII, без new/delete.
-* **Типы**: строгие `enum class`, `span`, `gsl` при желании.
-* **Документация**: Doxygen для DSP ядра.
-* **Рефакторинг**: GUI и DSP разнесены; параметры — в одном слое.
+* **Style**: modern C++17/20, RAII, no new/delete.
+* **Types**: strict `enum class`, `span`, `gsl` if desired.
+* **Documentation**: Doxygen for DSP core.
+* **Refactoring**: GUI and DSP separated; parameters — in one layer.
 
 ---
 
-## 13. Reading List (даты и суть)
+## 13. Reading List (dates and essence)
 
-* Steinberg **VST3 Dev Portal** — параметры/автомация, sample-accurate. (обновляется) — основы работы с параметрами и событиями. ([Steinberg Media][21])
-* Steinberg **VST3 SDK (MIT)** — исходники и примеры. (актуально 2025) — примеры плагинов. ([GitHub][4])
-* **Apple**: Prepare for distribution / Hardened runtime / Notarization. (живой док) — требования macOS. ([JUCE][14])
-* **JUCE Docs**: Oversampling, ScopedNoDenormals, dsp. (актуально) — готовые классы. ([docs.juce.com][9])
-* **pluginval** — CLI-валидация плагинов, CI. (актуально) — тесты форматов/хостов. ([GitHub][8])
-* **CLAP**: обзор/преимущества, лицензия MIT. (u-he) — когда добавлять CLAP. ([u-he][12])
-* **CoreMIDI UMP/MIDI 2.0** — база под будущее MIDI. (Apple) ([Apple Developer][13])
+* Steinberg **VST3 Dev Portal** — parameters/automation, sample-accurate. (updating) — basics of working with parameters and events. ([Steinberg Media][21])
+* Steinberg **VST3 SDK (MIT)** — sources and examples. (current 2025) — plugin examples. ([GitHub][4])
+* **Apple**: Prepare for distribution / Hardened runtime / Notarization. (live doc) — macOS requirements. ([JUCE][14])
+* **JUCE Docs**: Oversampling, ScopedNoDenormals, dsp. (current) — ready classes. ([docs.juce.com][9])
+* **pluginval** — CLI-validation of plugins, CI. (current) — format/host tests. ([GitHub][8])
+* **CLAP**: overview/benefits, MIT license. (u-he) — when to add CLAP. ([u-he][12])
+* **CoreMIDI UMP/MIDI 2.0** — foundation for future MIDI. (Apple) ([Apple Developer][13])
 
 ---
 
 ## 14. Decision Log (ADR)
 
-* **ADR-001**: *VST3+AU как baseline; CLAP — optional* вместо «только VST3», потому что Live/Logic покрываются сразу, а CLAP даёт плюсы в Bitwig/Reaper. ([JUCE][7])
-* **ADR-002**: *JUCE для MVP* вместо iPlug2, т.к. нужны SmoothedValue/Oversampling и быстрый старт; iPlug2 — как альтернатива при scale. ([docs.juce.com][9])
-* **ADR-003**: *Обязательная notarization macOS* из-за требований Gatekeeper. ([JUCE][14])
+* **ADR-001**: *VST3+AU as baseline; CLAP — optional* instead of "only VST3", because Live/Logic are covered immediately, and CLAP gives advantages in Bitwig/Reaper. ([JUCE][7])
+* **ADR-002**: *JUCE for MVP* instead of iPlug2, because SmoothedValue/Oversampling and fast start are needed; iPlug2 — as alternative at scale. ([docs.juce.com][9])
+* **ADR-003**: *Mandatory notarization macOS* due to Gatekeeper requirements. ([JUCE][14])
 
 ---
 
-## 15. Анти-паттерны
+## 15. Anti-patterns
 
-* **Аллокации/локи в аудио-потоке** → джиттер/дропы. Делайте prealloc и lock-free очереди.
-* **Отсутствие сглаживания параметров** → щелчки. Используйте SmoothedValue. ([JUCE][16])
-* **Игнор denormals** → CPU-пики на тишине. Включайте ScopedNoDenormals. ([docs.juce.com][3])
-* **Сырой нелинейный DSP без oversampling** → алиасинг. Применяйте x2–x4 Oversampling. ([docs.juce.com][9])
-* **Неправильные пути установки** → DAW не видит плагин. Используйте стандартные директории. ([Steinberg Help Center][6])
+* **Allocations/locks in audio-stream** → jitter/drops. Do prealloc and lock-free queues.
+* **Lack of parameter smoothing** → clicks. Use SmoothedValue. ([JUCE][16])
+* **Ignoring denormals** → CPU-peaks on silence. Enable ScopedNoDenormals. ([docs.juce.com][3])
+* **Raw nonlinear DSP without oversampling** → aliasing. Apply x2–x4 Oversampling. ([docs.juce.com][9])
+* **Incorrect installation paths** → DAW doesn't see plugin. Use standard directories. ([Steinberg Help Center][6])
 
 ---
 
 ## 16. Evidence & Citations
 
-Ключевые утверждения и практики подтверждены: VST3 MIT, Dev Portal и SDK; Apple notarization/paths; Ableton форматы; CLAP обзор; MIDI 2.0/UMP; real-time правила; denormals; oversampling; pluginval. См. ссылки в тексте. ([Ableton Help][1])
+Key claims and practices confirmed: VST3 MIT, Dev Portal and SDK; Apple notarization/paths; Ableton formats; CLAP overview; MIDI 2.0/UMP; real-time rules; denormals; oversampling; pluginval. See links in text. ([Ableton Help][1])
 
 ---
 
 ## 17. Verification
 
-* **Скрипт-дымок (macOS)**: собрать VST3/AU, `codesign` + `notarytool`, скопировать в стандартные пути, открыть Logic/Live, пройти `auval`, запустить `pluginval --strictness-level 8`. ([JUCE][14])
-* **Бенчмарк**: 48k/64 samples — измерить p95 времени блока в DAW и на host-симуляции; тест «fade-to-silence» на денормалы. ([JUCE][17])
-* **Конфиденс**: Архитектура/реал-тайм — High; Дистрибуция/подпись — High; MIDI 2.0/CLAP — Medium (зависит от хостов).
+* **Smoke script (macOS)**: build VST3/AU, `codesign` + `notarytool`, copy to standard paths, open Logic/Live, pass `auval`, run `pluginval --strictness-level 8`. ([JUCE][14])
+* **Benchmark**: 48k/64 samples — measure p95 block time in DAW and on host-simulation; test "fade-to-silence" for denormals. ([JUCE][17])
+* **Confidence**: Architecture/real-time — High; Distribution/signing — High; MIDI 2.0/CLAP — Medium (depends on hosts).
 
 ---
 
-### Приложение — Быстрый старт (JUCE, CMake, VST3+AU)
+### Appendix — Quick start (JUCE, CMake, VST3+AU)
 
-**Сборка форматов**: включите в CMake `JUCE_BUILD_VST3_PLUGIN TRUE`, `JUCE_BUILD_AU_PLUGIN TRUE`. Документы JUCE/дорожная карта подтверждают актуальность CMake/форматов. ([JUCE][11])
+**Building formats**: include in CMake `JUCE_BUILD_VST3_PLUGIN TRUE`, `JUCE_BUILD_AU_PLUGIN TRUE`. JUCE docs/roadmap confirm CMake/format relevance. ([JUCE][11])
 
 **Install-paths**:
 
-* Windows: копируйте `.vst3` в `C:\Program Files\Common Files\VST3`. ([Steinberg Help Center][6])
+* Windows: copy `.vst3` to `C:\Program Files\Common Files\VST3`. ([Steinberg Help Center][6])
 * macOS: `.vst3` → `/Library/Audio/Plug-Ins/VST3`, `.component` → `/Library/Audio/Plug-Ins/Components`. ([Apple Support][22])
 
-**Проверка автоматизации**: обработайте `IParameterChanges` для sample-accurate; сглаживание — `SmoothedValue`. ([GitHub][4])
+**Automation verification**: process `IParameterChanges` for sample-accurate; smoothing — `SmoothedValue`. ([GitHub][4])
 
-**Oversampling**: `dsp::Oversampling<float>(channels, stages, FIR|IIR)`; latency сообщайте хосту. ([docs.juce.com][9])
-
----
-
-Если хочется Web-версию поверх DAW-плагина, держите DSP-ядро чистым (C++) и делайте тонкий бридж в WebAudio/WASM; но сам плагин под Ableton должен быть нативным VST3/AU. Основание: требования хостов и форматов. ([JUCE][7])
-
+**Oversampling**: `dsp::Oversampling<float>(channels, stages, FIR|IIR)`; report latency to host. ([docs.juce.com][9])
