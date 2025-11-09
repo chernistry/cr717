@@ -394,11 +394,11 @@ void TR808GarageProcessor::loadPreset(int index)
 
 void TR808GarageProcessor::loadPreset(const Preset& preset)
 {
+    // Load parameters
     for (const auto& [paramID, value] : preset.parameters)
     {
         if (auto* param = apvts.getParameter(paramID))
         {
-            // Convert raw value to normalized if needed
             auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param);
             if (rangedParam)
             {
@@ -411,6 +411,18 @@ void TR808GarageProcessor::loadPreset(const Preset& preset)
             }
         }
     }
+    
+    // Load pattern into sequencer
+    for (int voice = 0; voice < 12; ++voice)
+    {
+        for (int step = 0; step < 16; ++step)
+        {
+            sequencer.setStep(voice, step, preset.pattern[voice][step]);
+        }
+    }
+    
+    // Set BPM
+    sequencer.setBPM(preset.bpm);
 }
 
 void TR808GarageProcessor::startSequencer()

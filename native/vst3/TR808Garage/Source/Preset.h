@@ -11,6 +11,7 @@ struct Preset
     int bpm = 120;
     float swing = 0.0f;
     std::map<juce::String, float> parameters;
+    std::array<std::array<bool, 16>, 12> pattern{}; // 12 voices x 16 steps
     
     static Preset fromJson(const juce::var& json)
     {
@@ -153,6 +154,12 @@ private:
         p.parameters["sdSendB"] = 0.15f;
         p.parameters["reverbSize"] = 0.45f;
         p.parameters["delayTime"] = 0.375f;
+        
+        // UK Garage pattern: kick on 1 and 3.5, snare on 2 and 4, hats on offbeats
+        p.pattern[0] = {1,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,0,0}; // BD
+        p.pattern[1] = {0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0}; // SD
+        p.pattern[7] = {0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1}; // CH
+        
         return p;
     }
     
