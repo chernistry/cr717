@@ -1,27 +1,33 @@
-export function playRS(ctx: AudioContext, time: number, _params?: any): void {
-  const osc1 = new OscillatorNode(ctx, { type: 'square', frequency: 180 });
-  const osc2 = new OscillatorNode(ctx, { type: 'square', frequency: 330 });
+export interface RSParams {
+  level?: number;
+  accent?: number;
+}
 
-  const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+const defaults: Required<RSParams> = {
+  level: 1.0,
+  accent: 0,
+};
+
+export function playRS(ctx: AudioContext, time: number, params: RSParams = {}): void {
+  const p = { ...defaults, ...params };
+  const accentGain = 1 + p.accent * 0.5;
+
+  // Short pulse/impulse into band-pass network
+  const buffer = ctx.createBuffer(1, 200, ctx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) {
-    data[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < 200; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / 20);
   }
-  const noise = new AudioBufferSourceNode(ctx, { buffer });
 
-  const gain = new GainNode(ctx, { gain: 0.8 });
+  const src = new AudioBufferSourceNode(ctx, { buffer });
+  const bp = new BiquadFilterNode(ctx, { type: 'bandpass', frequency: 2500, Q: 5 });
+  const gain = new GainNode(ctx, { gain: p.level * accentGain });
 
-  osc1.connect(gain);
-  osc2.connect(gain);
-  noise.connect(gain);
-  gain.connect(ctx.destination);
+  src.connect(bp).connect(gain).connect(ctx.destination);
 
-  gain.gain.setValueAtTime(0.8, time);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+  // Expo decay: 30ms
+  gain.gain.setValueAtTime(p.level * accentGain, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
 
-  osc1.start(time);
-  osc2.start(time);
-  noise.start(time);
-  osc1.stop(time + 0.06);
-  osc2.stop(time + 0.06);
+  src.start(time);
 }

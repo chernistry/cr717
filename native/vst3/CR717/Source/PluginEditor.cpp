@@ -16,6 +16,38 @@
 
 using namespace DesignTokens;
 
+namespace Layout
+{
+    constexpr int topBarHeight = 72;
+    constexpr int presetRowHeight = 56;
+    constexpr int sequencerHeight = 120;
+    constexpr int footerHeight = 36;
+    constexpr int transportHeight = 42;
+    constexpr int masterSectionWidth = 140;
+    constexpr int voiceColumns = 4;
+    constexpr int voiceRows = 3;
+}
+
+namespace
+{
+    struct VoiceSectionGeometry
+    {
+        juce::Rectangle<int> voiceGrid;
+        juce::Rectangle<int> masterArea;
+    };
+
+    VoiceSectionGeometry getVoiceSectionGeometry(juce::Rectangle<int> area)
+    {
+        VoiceSectionGeometry geometry{};
+        area.reduce(Spacing::md, Spacing::md);
+        geometry.masterArea = area.removeFromRight(Layout::masterSectionWidth);
+        geometry.masterArea = geometry.masterArea.reduced(Spacing::sm);
+        area.removeFromRight(Spacing::md);
+        geometry.voiceGrid = area;
+        return geometry;
+    }
+}
+
 CR717Editor::CR717Editor(CR717Processor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
@@ -211,22 +243,21 @@ void CR717Editor::setupVoiceControls(VoiceControls& vc, const juce::String& name
 void CR717Editor::paint(juce::Graphics& g)
 {
     g.fillAll(Colors::bgPrimary);
-    
+
     auto bounds = getLocalBounds();
-    
-    // Header
-    auto headerArea = bounds.removeFromTop(60);
+
+    auto headerArea = bounds.removeFromTop(Layout::topBarHeight);
     paintHeader(g, headerArea);
-    
-    // Pattern bank
-    auto patternArea = bounds.removeFromTop(50);
-    paintPatternBank(g, patternArea);
-    
-    // Footer
-    auto footerArea = bounds.removeFromBottom(30);
+
+    auto presetArea = bounds.removeFromTop(Layout::presetRowHeight);
+    paintPatternBank(g, presetArea);
+
+    auto sequencerArea = bounds.removeFromTop(Layout::sequencerHeight);
+    paintPatternBank(g, sequencerArea);
+
+    auto footerArea = bounds.removeFromBottom(Layout::footerHeight);
     paintFooter(g, footerArea);
-    
-    // Voice section
+
     paintVoiceSection(g, bounds);
 }
 
@@ -242,38 +273,43 @@ void CR717Editor::paintHeader(juce::Graphics& g, juce::Rectangle<int> area)
 
 void CR717Editor::paintPatternBank(juce::Graphics& g, juce::Rectangle<int> area)
 {
-    g.setColour(Colors::bgElevated);
-    g.fillRoundedRectangle(area.reduced(Spacing::sm).toFloat(), Radius::md);
+    auto panel = area.reduced(Spacing::sm);
+    g.setColour(Colors::bgSecondary);
+    g.fillRoundedRectangle(panel.toFloat(), Radius::lg);
+    g.setColour(Colors::border.withAlpha(0.4f));
+    g.drawRoundedRectangle(panel.toFloat(), Radius::lg, 1.0f);
 }
 
 void CR717Editor::paintVoiceSection(juce::Graphics& g, juce::Rectangle<int> area)
 {
-    // Draw voice panels with color stripes
-    auto drawVoicePanel = [&](juce::Rectangle<int> r, juce::Colour color) {
-        g.setColour(Colors::bgSecondary);
-        g.fillRoundedRectangle(r.toFloat(), Radius::lg);
-        
-        // Color stripe on left
-        g.setColour(color);
-        g.fillRoundedRectangle(r.removeFromLeft(3).toFloat(), Radius::sm);
-    };
-    
-    int voiceY = area.getY() + Spacing::md;
-    int voiceHeight = 140;
-    int voiceWidth = (area.getWidth() - Spacing::md * 5 - 120) / 4; // 4 columns
-    
+    const auto geometry = getVoiceSectionGeometry(area);
+
+    g.setColour(Colors::bgSecondary);
+    g.fillRoundedRectangle(geometry.masterArea.toFloat(), Radius::lg);
+
     VoiceControls* allVoices[] = {&bdControls, &sdControls, &ltControls, &mtControls,
                                    &htControls, &rsControls, &cpControls, &chControls,
                                    &ohControls, &cyControls, &rdControls, &cbControls};
-    
+
+    const int voiceWidth = (geometry.voiceGrid.getWidth() - (Layout::voiceColumns - 1) * Spacing::md)
+                           / Layout::voiceColumns;
+    const int voiceHeight = (geometry.voiceGrid.getHeight() - (Layout::voiceRows - 1) * Spacing::md)
+                            / Layout::voiceRows;
+
     for (int i = 0; i < 12; ++i)
     {
-        int col = i % 4;
-        int row = i / 4;
-        int x = area.getX() + Spacing::md + col * (voiceWidth + Spacing::md);
-        int y = voiceY + row * (voiceHeight + Spacing::md);
-        
-        drawVoicePanel(juce::Rectangle<int>(x, y, voiceWidth, voiceHeight), allVoices[i]->color);
+        int col = i % Layout::voiceColumns;
+        int row = i / Layout::voiceColumns;
+        int x = geometry.voiceGrid.getX() + col * (voiceWidth + Spacing::md);
+        int y = geometry.voiceGrid.getY() + row * (voiceHeight + Spacing::md);
+        auto cardBounds = juce::Rectangle<int>(x, y, voiceWidth, voiceHeight).reduced(1);
+
+        g.setColour(Colors::bgSecondary);
+        g.fillRoundedRectangle(cardBounds.toFloat(), Radius::lg);
+
+        auto stripe = cardBounds.removeFromLeft(4);
+        g.setColour(allVoices[i]->color);
+        g.fillRoundedRectangle(stripe.toFloat(), Radius::sm);
     }
 }
 
@@ -296,88 +332,90 @@ void CR717Editor::resized()
     using namespace DesignTokens;
     
     auto bounds = getLocalBounds();
-    
-    // Top bar (72px fixed height per spec)
-    auto topBarArea = bounds.removeFromTop(72);
-    // TopBar will be added in next ticket
-    
-    // Preset/Pattern controls (50px)
-    auto presetArea = bounds.removeFromTop(50).reduced(Spacing::md, Spacing::sm);
+
+    auto topBarArea = bounds.removeFromTop(Layout::topBarHeight);
+    const int themeButtonWidth = 96;
+    auto themeArea = topBarArea.removeFromRight(themeButtonWidth + Spacing::md);
+    auto themeButtonBounds = themeArea.removeFromTop(32);
+    themeButtonBounds.setWidth(themeButtonWidth);
+    themeButtonBounds.setX(getWidth() - themeButtonWidth - Spacing::md);
+    themeButtonBounds.setY(topBarArea.getCentreY() - themeButtonBounds.getHeight() / 2);
+    themeButton.setBounds(themeButtonBounds);
+
+    auto presetArea = bounds.removeFromTop(Layout::presetRowHeight).reduced(Spacing::md, Spacing::sm);
     auto presetRow = presetArea;
-    
-    prevPresetButton.setBounds(presetRow.removeFromLeft(40));
+
+    const int presetNavWidth = 36;
+    prevPresetButton.setBounds(presetRow.removeFromLeft(presetNavWidth));
     presetRow.removeFromLeft(Spacing::sm);
     presetSelector.setBounds(presetRow.removeFromLeft(300));
     presetRow.removeFromLeft(Spacing::sm);
-    nextPresetButton.setBounds(presetRow.removeFromLeft(40));
-    presetRow.removeFromLeft(Spacing::lg);
-    
-    copyButton.setBounds(presetRow.removeFromLeft(60));
-    presetRow.removeFromLeft(Spacing::sm);
-    pasteButton.setBounds(presetRow.removeFromLeft(60));
-    presetRow.removeFromLeft(Spacing::sm);
-    clearButton.setBounds(presetRow.removeFromLeft(60));
-    
-    // Theme button (top right)
-    themeButton.setBounds(getWidth() - 80 - Spacing::md, topBarArea.getY() + 10, 80, 30);
-    
-    // Transport and sequencer (100px)
-    auto seqArea = bounds.removeFromTop(100).reduced(Spacing::md, Spacing::sm);
-    
-    auto transportRow = seqArea.removeFromTop(40);
-    playButton.setBounds(transportRow.removeFromLeft(50));
+    nextPresetButton.setBounds(presetRow.removeFromLeft(presetNavWidth));
+
+    const int actionButtonWidth = 68;
+    auto actionRow = presetRow.removeFromRight(actionButtonWidth * 3 + Spacing::sm * 2);
+    copyButton.setBounds(actionRow.removeFromLeft(actionButtonWidth));
+    actionRow.removeFromLeft(Spacing::sm);
+    pasteButton.setBounds(actionRow.removeFromLeft(actionButtonWidth));
+    actionRow.removeFromLeft(Spacing::sm);
+    clearButton.setBounds(actionRow.removeFromLeft(actionButtonWidth));
+
+    auto seqArea = bounds.removeFromTop(Layout::sequencerHeight).reduced(Spacing::md, Spacing::sm);
+    auto transportRow = seqArea.removeFromTop(Layout::transportHeight);
+
+    const int transportButtonWidth = 48;
+    playButton.setBounds(transportRow.removeFromLeft(transportButtonWidth));
+    transportRow.removeFromLeft(Spacing::xs);
+    stopButton.setBounds(transportRow.removeFromLeft(transportButtonWidth));
+    transportRow.removeFromLeft(Spacing::md);
+
+    const int voiceSelectorWidth = 110;
+    auto voiceArea = transportRow.removeFromRight(voiceSelectorWidth);
+    voiceSelector.setBounds(voiceArea);
+    transportRow.removeFromRight(Spacing::md);
+
+    const int midiWidth = 120;
+    auto midiArea = transportRow.removeFromRight(midiWidth);
+    midiDragSource.setBounds(midiArea);
+    transportRow.removeFromRight(Spacing::md);
+
+    const int bpmLabelWidth = 40;
+    bpmLabel.setBounds(transportRow.removeFromLeft(bpmLabelWidth));
     transportRow.removeFromLeft(Spacing::sm);
-    stopButton.setBounds(transportRow.removeFromLeft(50));
-    transportRow.removeFromLeft(Spacing::lg);
-    
-    bpmLabel.setBounds(transportRow.removeFromLeft(40));
-    transportRow.removeFromLeft(Spacing::sm);
-    bpmSlider.setBounds(transportRow.removeFromLeft(200));
-    
-    // MIDI drag source (right side of transport)
-    midiDragSource.setBounds(getWidth() - 130 - Spacing::md, 
-                            topBarArea.getBottom() + 60, 120, 35);
-    
-    // Step grid
+    bpmSlider.setBounds(transportRow.removeFromLeft(juce::jmin(240, transportRow.getWidth())));
+
     seqArea.removeFromTop(Spacing::sm);
     auto stepRow = seqArea;
-    voiceSelector.setBounds(stepRow.removeFromLeft(100));
-    stepRow.removeFromLeft(Spacing::md);
-    
-    int stepWidth = (stepRow.getWidth() - 15 * 4) / 16;
+    const int stepGap = Spacing::xs;
+    const int stepWidth = juce::jmax(28, (stepRow.getWidth() - stepGap * 15) / 16);
     for (int i = 0; i < 16; ++i)
     {
-        stepButtons[i].setBounds(stepRow.removeFromLeft(stepWidth));
-        if (i < 15) stepRow.removeFromLeft(4);
+        auto stepBounds = stepRow.removeFromLeft(stepWidth);
+        stepButtons[i].setBounds(stepBounds);
+        if (i < 15)
+            stepRow.removeFromLeft(stepGap);
     }
-    
-    // Footer (30px)
-    auto footerArea = bounds.removeFromBottom(30);
-    
-    // Main content: Voice grid + Master section
-    bounds.reduce(Spacing::md, Spacing::md);
-    
-    // Master section (right side, 120px)
-    auto masterArea = bounds.removeFromRight(120);
-    masterLevelLabel.setBounds(masterArea.removeFromTop(25));
+
+    bounds.removeFromBottom(Layout::footerHeight);
+
+    const auto voiceGeometry = getVoiceSectionGeometry(bounds);
+
+    auto masterArea = voiceGeometry.masterArea;
+    masterLevelLabel.setBounds(masterArea.removeFromTop(24));
     masterArea.removeFromTop(Spacing::sm);
-    
-    auto meterSliderArea = masterArea.removeFromTop(200);
-    masterMeter.setBounds(meterSliderArea.removeFromLeft(20));
-    meterSliderArea.removeFromLeft(Spacing::sm);
-    masterLevelSlider.setBounds(meterSliderArea);
-    
-    bounds.removeFromRight(Spacing::md);
-    
-    // Voice grid: 4 columns × 3 rows = 12 voices
-    const int cols = 4;
-    const int rows = 3;
-    const int voiceWidth = (bounds.getWidth() - (cols - 1) * Spacing::md) / cols;
-    const int voiceHeight = (bounds.getHeight() - (rows - 1) * Spacing::md) / rows;
-    
+    auto meterArea = masterArea.removeFromLeft(20);
+    masterMeter.setBounds(meterArea);
+    masterArea.removeFromLeft(Spacing::sm);
+    masterLevelSlider.setBounds(masterArea);
+
+    const int voiceWidth = (voiceGeometry.voiceGrid.getWidth() - (Layout::voiceColumns - 1) * Spacing::md)
+                           / Layout::voiceColumns;
+    const int voiceHeight = (voiceGeometry.voiceGrid.getHeight() - (Layout::voiceRows - 1) * Spacing::md)
+                            / Layout::voiceRows;
+
     auto layoutVoice = [&](VoiceControls& vc, int col, int row) {
-        int x = bounds.getX() + col * (voiceWidth + Spacing::md);
-        int y = bounds.getY() + row * (voiceHeight + Spacing::md);
+        int x = voiceGeometry.voiceGrid.getX() + col * (voiceWidth + Spacing::md);
+        int y = voiceGeometry.voiceGrid.getY() + row * (voiceHeight + Spacing::md);
         auto voiceArea = juce::Rectangle<int>(x, y, voiceWidth, voiceHeight);
         
         // Voice name label (top)
@@ -413,19 +451,16 @@ void CR717Editor::resized()
         }
     };
     
-    // Row 0: BD, SD, LT, MT
     layoutVoice(bdControls, 0, 0);
     layoutVoice(sdControls, 1, 0);
     layoutVoice(ltControls, 2, 0);
     layoutVoice(mtControls, 3, 0);
-    
-    // Row 1: HT, RS, CP, CH
+
     layoutVoice(htControls, 0, 1);
     layoutVoice(rsControls, 1, 1);
     layoutVoice(cpControls, 2, 1);
     layoutVoice(chControls, 3, 1);
-    
-    // Row 2: OH, CY, RD, CB
+
     layoutVoice(ohControls, 0, 2);
     layoutVoice(cyControls, 1, 2);
     layoutVoice(rdControls, 2, 2);
