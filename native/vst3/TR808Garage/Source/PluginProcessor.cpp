@@ -17,10 +17,16 @@ void TR808GarageProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     
     bassDrum.prepare(sampleRate, samplesPerBlock);
     snareDrum.prepare(sampleRate, samplesPerBlock);
+    lowTom.prepare(sampleRate, samplesPerBlock);
+    midTom.prepare(sampleRate, samplesPerBlock);
+    highTom.prepare(sampleRate, samplesPerBlock);
+    rimShot.prepare(sampleRate, samplesPerBlock);
+    clap.prepare(sampleRate, samplesPerBlock);
     closedHat.prepare(sampleRate, samplesPerBlock);
     openHat.prepare(sampleRate, samplesPerBlock);
-    clap.prepare(sampleRate, samplesPerBlock);
-    rimShot.prepare(sampleRate, samplesPerBlock);
+    cymbal.prepare(sampleRate, samplesPerBlock);
+    ride.prepare(sampleRate, samplesPerBlock);
+    cowbell.prepare(sampleRate, samplesPerBlock);
 }
 
 void TR808GarageProcessor::releaseResources()
@@ -69,23 +75,18 @@ void TR808GarageProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     // Render all active voices
     int numSamples = buffer.getNumSamples();
     
-    if (bassDrum.isActive())
-        bassDrum.renderNextBlock(buffer, 0, numSamples);
-    
-    if (snareDrum.isActive())
-        snareDrum.renderNextBlock(buffer, 0, numSamples);
-    
-    if (closedHat.isActive())
-        closedHat.renderNextBlock(buffer, 0, numSamples);
-    
-    if (openHat.isActive())
-        openHat.renderNextBlock(buffer, 0, numSamples);
-    
-    if (clap.isActive())
-        clap.renderNextBlock(buffer, 0, numSamples);
-    
-    if (rimShot.isActive())
-        rimShot.renderNextBlock(buffer, 0, numSamples);
+    if (bassDrum.isActive()) bassDrum.renderNextBlock(buffer, 0, numSamples);
+    if (snareDrum.isActive()) snareDrum.renderNextBlock(buffer, 0, numSamples);
+    if (lowTom.isActive()) lowTom.renderNextBlock(buffer, 0, numSamples);
+    if (midTom.isActive()) midTom.renderNextBlock(buffer, 0, numSamples);
+    if (highTom.isActive()) highTom.renderNextBlock(buffer, 0, numSamples);
+    if (rimShot.isActive()) rimShot.renderNextBlock(buffer, 0, numSamples);
+    if (clap.isActive()) clap.renderNextBlock(buffer, 0, numSamples);
+    if (closedHat.isActive()) closedHat.renderNextBlock(buffer, 0, numSamples);
+    if (openHat.isActive()) openHat.renderNextBlock(buffer, 0, numSamples);
+    if (cymbal.isActive()) cymbal.renderNextBlock(buffer, 0, numSamples);
+    if (ride.isActive()) ride.renderNextBlock(buffer, 0, numSamples);
+    if (cowbell.isActive()) cowbell.renderNextBlock(buffer, 0, numSamples);
 
     // Apply master level
     float masterLevel = apvts.getRawParameterValue(ParamIDs::masterLevel)->load();
@@ -136,14 +137,21 @@ void TR808GarageProcessor::handleMidiMessage(const juce::MidiMessage& msg)
 
 Voice* TR808GarageProcessor::getVoiceForNote(int noteNumber)
 {
+    // GM Drum Map: BD=36, SD=38, LT=41, MT=47, HT=50, RS=37, CP=39, CH=42, OH=46, CY=49, RD=51, CB=56
     switch (noteNumber)
     {
         case 36: return &bassDrum;      // C1 - Bass Drum
         case 38: return &snareDrum;     // D1 - Snare Drum
+        case 41: return &lowTom;        // F1 - Low Tom
+        case 47: return &midTom;        // B1 - Mid Tom
+        case 50: return &highTom;       // D2 - High Tom
+        case 37: return &rimShot;       // C#1 - Rim Shot
+        case 39: return &clap;          // D#1 - Hand Clap
         case 42: return &closedHat;     // F#1 - Closed Hi-Hat
         case 46: return &openHat;       // A#1 - Open Hi-Hat
-        case 39: return &clap;          // D#1 - Hand Clap
-        case 37: return &rimShot;       // C#1 - Rim Shot
+        case 49: return &cymbal;        // C#2 - Crash Cymbal
+        case 51: return &ride;          // D#2 - Ride Cymbal
+        case 56: return &cowbell;       // G#2 - Cowbell
         default: return nullptr;
     }
 }

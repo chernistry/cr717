@@ -42,6 +42,8 @@ target_sources(TR808Garage PRIVATE
     Source/SnareDrumVoice.h
     Source/HiHatVoice.h
     Source/PercussionVoice.h
+    Source/TomVoice.h
+    Source/CymbalVoice.h
 )
 
 target_compile_definitions(TR808Garage PUBLIC

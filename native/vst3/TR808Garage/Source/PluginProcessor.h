@@ -5,6 +5,8 @@
 #include "SnareDrumVoice.h"
 #include "HiHatVoice.h"
 #include "PercussionVoice.h"
+#include "TomVoice.h"
+#include "CymbalVoice.h"
 #include "Parameters.h"
 
 class TR808GarageProcessor : public juce::AudioProcessor
@@ -41,18 +43,22 @@ public:
 private:
     juce::AudioProcessorValueTreeState apvts;
     
-    // Voice instances
+    // 12 voices: BD, SD, LT, MT, HT, RS, CP, CH, OH, CY, RD, CB
     BassDrumVoice bassDrum;
     SnareDrumVoice snareDrum;
+    LowTomVoice lowTom;
+    MidTomVoice midTom;
+    HighTomVoice highTom;
+    RimShotVoice rimShot;
+    ClapVoice clap;
     ClosedHiHatVoice closedHat;
     OpenHiHatVoice openHat;
-    ClapVoice clap;
-    RimShotVoice rimShot;
+    CymbalVoice cymbal;
+    RideVoice ride;
+    CowbellVoice cowbell;
 
-    // Host info
     double hostBPM = 120.0;
     bool hostIsPlaying = false;
-    
     int currentPreset = 0;
 
     void handleMidiMessage(const juce::MidiMessage& msg);
