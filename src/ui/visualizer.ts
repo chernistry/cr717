@@ -4,7 +4,6 @@ export class Visualizer {
   private rafId: number | null = null;
   private onStepChange: (step: number) => void;
   private bpm: number;
-  private startTime: number = 0;
 
   constructor(onStepChange: (step: number) => void) {
     this.onStepChange = onStepChange;
@@ -13,10 +12,6 @@ export class Visualizer {
 
   start(bpm: number): void {
     this.bpm = bpm;
-    const ctx = getAudioContext();
-    if (!ctx) return;
-
-    this.startTime = ctx.currentTime;
     this.tick();
   }
 
@@ -31,9 +26,11 @@ export class Visualizer {
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    // Use getOutputTimestamp() for precise audio-visual sync
+    const timestamp = ctx.getOutputTimestamp();
+    const contextTime = timestamp.contextTime ?? ctx.currentTime;
     const stepDuration = 60 / this.bpm / 4;
-    const elapsed = ctx.currentTime - this.startTime;
-    const currentStep = Math.floor(elapsed / stepDuration) % 16;
+    const currentStep = Math.floor(contextTime / stepDuration) % 16;
 
     this.onStepChange(currentStep);
 
