@@ -14,7 +14,7 @@ public:
         rmsBuffer.resize(rmsWindowSize * 2, 0.0f);
         rmsIndex = 0;
         
-        // Lookahead delay
+        // Compressor lookahead delay
         lookaheadDelay.prepare(spec);
         lookaheadDelay.setMaximumDelayInSamples(static_cast<int>(sampleRate * 0.005)); // 5ms max
         
@@ -22,10 +22,13 @@ public:
         scHpf.prepare(spec);
         scHpf.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 80.0f);
         
-        // Limiter
-        limiter.prepare(spec);
-        limiter.setThreshold(-0.5f);
-        limiter.setRelease(50.0f);
+        // Limiter lookahead
+        limiterLookahead.prepare(spec);
+        limiterLookahead.setMaximumDelayInSamples(static_cast<int>(sampleRate * 0.01)); // 10ms max
+        
+        // True-peak oversampling (4x, linear-phase FIR)
+        oversampling = std::make_unique<juce::dsp::Oversampling<float>>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
+        oversampling->initProcessing(maxBlockSize);
         
         // Smoothed parameters
         smoothedThreshold.reset(sampleRate, 0.02);
@@ -35,6 +38,9 @@ public:
         smoothedKnee.reset(sampleRate, 0.02);
         smoothedMakeup.reset(sampleRate, 0.02);
         smoothedScHpf.reset(sampleRate, 0.05);
+        smoothedLimiterCeiling.reset(sampleRate, 0.02);
+        smoothedLimiterRelease.reset(sampleRate, 0.02);
+        smoothedLimiterKnee.reset(sampleRate, 0.02);
         
         // Auto-makeup RMS tracking (300ms)
         autoMakeupWindowSize = static_cast<int>(sampleRate * 0.3);
@@ -43,6 +49,7 @@ public:
         
         gainReduction = 0.0f;
         envelopeState = 0.0f;
+        limiterEnvelope = 1.0f;
     }
 
     void setThreshold(float db) { smoothedThreshold.setTargetValue(db); }
@@ -55,7 +62,11 @@ public:
     void setScHpfFreq(float hz) { smoothedScHpf.setTargetValue(hz); }
     void setDetectorMode(bool useRms) { rmsMode = useRms; }
     void setLookahead(float ms) { lookaheadMs = ms; }
-    void setLimiterThreshold(float db) { limiter.setThreshold(db); }
+    void setLimiterCeiling(float db) { smoothedLimiterCeiling.setTargetValue(db); }
+    void setLimiterRelease(float ms) { smoothedLimiterRelease.setTargetValue(ms); }
+    void setLimiterKnee(float db) { smoothedLimiterKnee.setTargetValue(db); }
+    void setLimiterLookahead(float ms) { limiterLookaheadMs = ms; }
+    void setLimiterOversampling(bool enabled) { limiterOversamplingEnabled = enabled; }
 
     void process(juce::AudioBuffer<float>& buffer, bool compEnabled, bool limiterEnabled)
     {
@@ -65,10 +76,7 @@ public:
             processCompressor(buffer);
         
         if (limiterEnabled)
-        {
-            juce::dsp::AudioBlock<float> block(buffer);
-            limiter.process(juce::dsp::ProcessContextReplacing<float>(block));
-        }
+            processTruePeakLimiter(buffer);
         
         softClip(buffer);
     }
@@ -78,14 +86,17 @@ public:
     void reset()
     {
         lookaheadDelay.reset();
+        limiterLookahead.reset();
         scHpf.reset();
-        limiter.reset();
+        if (oversampling)
+            oversampling->reset();
         std::fill(rmsBuffer.begin(), rmsBuffer.end(), 0.0f);
         std::fill(autoMakeupBuffer.begin(), autoMakeupBuffer.end(), 0.0f);
         rmsIndex = 0;
         autoMakeupIndex = 0;
         gainReduction = 0.0f;
         envelopeState = 0.0f;
+        limiterEnvelope = 1.0f;
     }
 
 private:
@@ -241,6 +252,107 @@ private:
         gainReduction = juce::Decibels::gainToDecibels(envelopeState);
     }
 
+    void processTruePeakLimiter(juce::AudioBuffer<float>& buffer)
+    {
+        const int numSamples = buffer.getNumSamples();
+        const int numChannels = buffer.getNumChannels();
+        
+        float ceiling = smoothedLimiterCeiling.getNextValue();
+        float knee = smoothedLimiterKnee.getNextValue();
+        float releaseMs = smoothedLimiterRelease.getNextValue();
+        
+        int lookaheadSamples = static_cast<int>(spec.sampleRate * limiterLookaheadMs * 0.001f);
+        limiterLookahead.setDelay(static_cast<float>(lookaheadSamples));
+        
+        float releaseCoeff = std::exp(-1.0f / (releaseMs * 0.001f * spec.sampleRate));
+        float ceilingGain = juce::Decibels::decibelsToGain(ceiling);
+        
+        if (limiterOversamplingEnabled && oversampling)
+        {
+            // True-peak detection via 4x oversampling
+            juce::dsp::AudioBlock<float> block(buffer);
+            auto oversampledBlock = oversampling->processSamplesUp(block);
+            
+            const int osNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
+            
+            for (int i = 0; i < osNumSamples; ++i)
+            {
+                float peak = 0.0f;
+                for (size_t ch = 0; ch < oversampledBlock.getNumChannels(); ++ch)
+                    peak = std::max(peak, std::abs(oversampledBlock.getSample(ch, i)));
+                
+                // Gain computer with soft knee
+                float targetGain = 1.0f;
+                if (peak > ceilingGain)
+                {
+                    if (knee > 0.01f)
+                    {
+                        float kneeStart = ceilingGain * (1.0f - knee * 0.1f);
+                        if (peak > kneeStart)
+                        {
+                            float excess = (peak - kneeStart) / (ceilingGain - kneeStart);
+                            targetGain = kneeStart / peak + (1.0f - excess) * (ceilingGain - kneeStart) / peak;
+                        }
+                    }
+                    else
+                    {
+                        targetGain = ceilingGain / peak;
+                    }
+                }
+                
+                // Instant attack, smooth release
+                if (targetGain < limiterEnvelope)
+                    limiterEnvelope = targetGain;
+                else
+                    limiterEnvelope = releaseCoeff * limiterEnvelope + (1.0f - releaseCoeff) * targetGain;
+                
+                // Apply gain
+                for (size_t ch = 0; ch < oversampledBlock.getNumChannels(); ++ch)
+                    oversampledBlock.setSample(ch, i, oversampledBlock.getSample(ch, i) * limiterEnvelope);
+            }
+            
+            oversampling->processSamplesDown(block);
+        }
+        else
+        {
+            // Standard peak limiting (no oversampling)
+            for (int i = 0; i < numSamples; ++i)
+            {
+                float peak = 0.0f;
+                for (int ch = 0; ch < numChannels; ++ch)
+                {
+                    float sample = buffer.getSample(ch, i);
+                    if (lookaheadSamples > 0)
+                    {
+                        limiterLookahead.pushSample(ch, sample);
+                        sample = limiterLookahead.popSample(ch);
+                    }
+                    peak = std::max(peak, std::abs(sample));
+                }
+                
+                float targetGain = 1.0f;
+                if (peak > ceilingGain)
+                    targetGain = ceilingGain / peak;
+                
+                if (targetGain < limiterEnvelope)
+                    limiterEnvelope = targetGain;
+                else
+                    limiterEnvelope = releaseCoeff * limiterEnvelope + (1.0f - releaseCoeff) * targetGain;
+                
+                for (int ch = 0; ch < numChannels; ++ch)
+                {
+                    float sample = buffer.getSample(ch, i);
+                    if (lookaheadSamples > 0)
+                    {
+                        limiterLookahead.pushSample(ch, sample);
+                        sample = limiterLookahead.popSample(ch);
+                    }
+                    buffer.setSample(ch, i, sample * limiterEnvelope);
+                }
+            }
+        }
+    }
+
     void softClip(juce::AudioBuffer<float>& buffer)
     {
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
@@ -253,17 +365,19 @@ private:
 
     juce::dsp::ProcessSpec spec;
     juce::dsp::DelayLine<float> lookaheadDelay{1024};
+    juce::dsp::DelayLine<float> limiterLookahead{2048};
     juce::dsp::IIR::Filter<float> scHpf;
-    juce::dsp::Limiter<float> limiter;
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
     
     juce::SmoothedValue<float> smoothedThreshold, smoothedRatio, smoothedAttack, smoothedRelease;
     juce::SmoothedValue<float> smoothedKnee, smoothedMakeup, smoothedScHpf;
+    juce::SmoothedValue<float> smoothedLimiterCeiling, smoothedLimiterRelease, smoothedLimiterKnee;
     
     std::vector<float> rmsBuffer, autoMakeupBuffer;
     int rmsWindowSize = 0, rmsIndex = 0;
     int autoMakeupWindowSize = 0, autoMakeupIndex = 0;
     
-    float gainReduction = 0.0f, envelopeState = 0.0f;
-    float currentScHpf = 80.0f, lookaheadMs = 0.0f;
-    bool rmsMode = true, autoMakeupEnabled = false;
+    float gainReduction = 0.0f, envelopeState = 0.0f, limiterEnvelope = 1.0f;
+    float currentScHpf = 80.0f, lookaheadMs = 0.0f, limiterLookaheadMs = 5.0f;
+    bool rmsMode = true, autoMakeupEnabled = false, limiterOversamplingEnabled = true;
 };

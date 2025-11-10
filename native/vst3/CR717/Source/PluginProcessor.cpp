@@ -279,7 +279,13 @@ void CR717Processor::updateFXParameters()
     masterDynamics.setScHpfFreq(apvts.getRawParameterValue(ParamIDs::compScHpf)->load());
     masterDynamics.setDetectorMode(apvts.getRawParameterValue(ParamIDs::compDetector)->load() > 0.5f);
     masterDynamics.setLookahead(apvts.getRawParameterValue(ParamIDs::compLookahead)->load());
-    masterDynamics.setLimiterThreshold(apvts.getRawParameterValue(ParamIDs::limiterThreshold)->load());
+    
+    // Limiter
+    masterDynamics.setLimiterCeiling(apvts.getRawParameterValue(ParamIDs::limiterCeiling)->load());
+    masterDynamics.setLimiterRelease(apvts.getRawParameterValue(ParamIDs::limiterRelease)->load());
+    masterDynamics.setLimiterKnee(apvts.getRawParameterValue(ParamIDs::limiterKnee)->load());
+    masterDynamics.setLimiterLookahead(apvts.getRawParameterValue(ParamIDs::limiterLookahead)->load());
+    masterDynamics.setLimiterOversampling(apvts.getRawParameterValue(ParamIDs::limiterOversampling)->load() > 0.5f);
 }
 
 void CR717Processor::handleMidiMessage(const juce::MidiMessage& msg)

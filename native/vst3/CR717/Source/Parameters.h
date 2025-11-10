@@ -126,7 +126,11 @@ namespace ParamIDs
     inline constexpr auto compDetector = "compDetector";
     inline constexpr auto compLookahead = "compLookahead";
     inline constexpr auto compEnabled = "compEnabled";
-    inline constexpr auto limiterThreshold = "limiterThreshold";
+    inline constexpr auto limiterCeiling = "limiterCeiling";
+    inline constexpr auto limiterRelease = "limiterRelease";
+    inline constexpr auto limiterKnee = "limiterKnee";
+    inline constexpr auto limiterLookahead = "limiterLookahead";
+    inline constexpr auto limiterOversampling = "limiterOversampling";
     inline constexpr auto limiterEnabled = "limiterEnabled";
 }
 
@@ -257,7 +261,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::compDetector, 1}, "Comp RMS Mode", true));
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::compLookahead, 1}, "Comp Lookahead", juce::NormalisableRange<float>(0.0f, 5.0f), 0.0f));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::compEnabled, 1}, "Comp Enabled", true));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterThreshold, 1}, "Limiter Threshold", juce::NormalisableRange<float>(-6.0f, 0.0f), -0.5f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterCeiling, 1}, "Limiter Ceiling", juce::NormalisableRange<float>(-0.3f, 0.0f), -0.3f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterRelease, 1}, "Limiter Release", juce::NormalisableRange<float>(10.0f, 1000.0f, 0.0f, 0.3f), 50.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterKnee, 1}, "Limiter Knee", juce::NormalisableRange<float>(0.0f, 3.0f), 0.5f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterLookahead, 1}, "Limiter Lookahead", juce::NormalisableRange<float>(0.0f, 10.0f), 5.0f));
+    layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::limiterOversampling, 1}, "Limiter Oversampling", true));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::limiterEnabled, 1}, "Limiter Enabled", true));
     
     return layout;
