@@ -199,7 +199,16 @@ public:
             {
                 int padIndex = voice * VISIBLE_STEPS + step;
                 // Update pad's internal step index
-                // (would need to recreate pads or add setter)
+                if (padIndex >= 0 && padIndex < pads.size())
+                {
+                    int absoluteStep = step + currentPage * VISIBLE_STEPS;
+                    pads[padIndex]->setStepIndex(absoluteStep);
+                    if (onRequestPadState)
+                    {
+                        auto st = onRequestPadState(absoluteStep, voice);
+                        pads[padIndex]->setState(st);
+                    }
+                }
             }
         }
         
@@ -229,6 +238,7 @@ public:
     }
     
     std::function<void(int step, int voice, StepPad::State state)> onPadStateChanged;
+    std::function<StepPad::State(int step, int voice)> onRequestPadState;
     
 private:
     void timerCallback() override

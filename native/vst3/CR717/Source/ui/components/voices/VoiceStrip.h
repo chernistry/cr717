@@ -279,7 +279,7 @@ private:
         menu.addItem(1, "Reset to Default");
         menu.addSeparator();
         menu.addItem(2, "Copy Settings");
-        menu.addItem(3, "Paste Settings", copiedSettings.isNotEmpty());
+        menu.addItem(3, "Paste Settings", !copiedSettings.isVoid());
         
         menu.showMenuAsync(juce::PopupMenu::Options(),
             [this](int result)

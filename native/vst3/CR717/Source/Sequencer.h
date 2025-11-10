@@ -11,24 +11,50 @@ public:
     
     struct Pattern
     {
-        std::array<std::array<bool, NUM_STEPS>, NUM_VOICES> steps{};
+        struct Step { bool on = false; bool accent = false; };
+        std::array<std::array<Step, NUM_STEPS>, NUM_VOICES> steps{};
         
         void clear()
         {
             for (auto& voice : steps)
-                voice.fill(false);
+            {
+                for (auto& s : voice)
+                    s = {};
+            }
         }
         
         void setStep(int voice, int step, bool active)
         {
             if (voice >= 0 && voice < NUM_VOICES && step >= 0 && step < NUM_STEPS)
-                steps[voice][step] = active;
+                steps[voice][step].on = active;
+        }
+        
+        void setStep(int voice, int step, bool active, bool isAccent)
+        {
+            if (voice >= 0 && voice < NUM_VOICES && step >= 0 && step < NUM_STEPS)
+            {
+                steps[voice][step].on = active;
+                steps[voice][step].accent = isAccent && active;
+            }
+        }
+        
+        void setAccent(int voice, int step, bool isAccent)
+        {
+            if (voice >= 0 && voice < NUM_VOICES && step >= 0 && step < NUM_STEPS)
+                steps[voice][step].accent = isAccent && steps[voice][step].on;
         }
         
         bool getStep(int voice, int step) const
         {
             if (voice >= 0 && voice < NUM_VOICES && step >= 0 && step < NUM_STEPS)
-                return steps[voice][step];
+                return steps[voice][step].on;
+            return false;
+        }
+        
+        bool getAccent(int voice, int step) const
+        {
+            if (voice >= 0 && voice < NUM_VOICES && step >= 0 && step < NUM_STEPS)
+                return steps[voice][step].accent;
             return false;
         }
     };
@@ -36,13 +62,17 @@ public:
     Sequencer() { pattern.clear(); }
     
     void setStep(int voice, int step, bool active) { pattern.setStep(voice, step, active); }
+    void setStep(int voice, int step, bool active, bool accent) { pattern.setStep(voice, step, active, accent); }
+    void setAccent(int voice, int step, bool accent) { pattern.setAccent(voice, step, accent); }
     bool getStep(int voice, int step) const { return pattern.getStep(voice, step); }
+    bool getAccent(int voice, int step) const { return pattern.getAccent(voice, step); }
     
     void setCurrentStep(int step) { currentStep = step % NUM_STEPS; }
     int getCurrentStep() const { return currentStep; }
     
     void setPlaying(bool shouldPlay) { isPlaying = shouldPlay; }
     bool getPlaying() const { return isPlaying; }
+    void togglePlayback() { isPlaying = !isPlaying; }
     
     void setBPM(double bpm) { currentBPM = bpm; }
     double getBPM() const { return currentBPM; }

@@ -116,7 +116,7 @@ private:
         {
             float holdY = meterArea.getBottom() - hold * meterArea.getHeight();
             g.setColour(Colors::textPrimary);
-            g.fillRect(meterArea.getX(), holdY - 1, meterArea.getWidth(), 2);
+            g.fillRect((float)meterArea.getX(), holdY - 1.0f, (float)meterArea.getWidth(), 2.0f);
         }
         
         // dB markers
@@ -186,10 +186,25 @@ public:
         reverbSize->setValue(0.5);
         addAndMakeVisible(reverbSize.get());
         
+        reverbDamp = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "Damp");
+        reverbDamp->setRange(0.0, 1.0, 0.01);
+        reverbDamp->setValue(0.5);
+        addAndMakeVisible(reverbDamp.get());
+        
         reverbMix = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "Mix");
         reverbMix->setRange(0.0, 1.0, 0.01);
         reverbMix->setValue(0.3);
         addAndMakeVisible(reverbMix.get());
+        
+        reverbPreDelay = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "PreDly");
+        reverbPreDelay->setRange(0.0, 100.0, 1.0);
+        reverbPreDelay->setValue(20.0);
+        addAndMakeVisible(reverbPreDelay.get());
+        
+        reverbDiffusion = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "Diff");
+        reverbDiffusion->setRange(0.0, 1.0, 0.01);
+        reverbDiffusion->setValue(0.7);
+        addAndMakeVisible(reverbDiffusion.get());
         
         // Delay controls
         delayTime = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "Time");
@@ -206,6 +221,22 @@ public:
         delayMix->setRange(0.0, 1.0, 0.01);
         delayMix->setValue(0.3);
         addAndMakeVisible(delayMix.get());
+        
+        delayMode.addItem("Mono", 1);
+        delayMode.addItem("Ping-Pong", 2);
+        delayMode.addItem("Stereo", 3);
+        delayMode.setSelectedId(3, juce::dontSendNotification);
+        addAndMakeVisible(delayMode);
+
+        delayModRate = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "ModRt");
+        delayModRate->setRange(0.1, 5.0, 0.01);
+        delayModRate->setValue(0.0);
+        addAndMakeVisible(delayModRate.get());
+        
+        delayModDepth = std::make_unique<RotaryKnob>(RotaryKnob::Size::Small, "ModDp");
+        delayModDepth->setRange(0.0, 10.0, 0.1);
+        delayModDepth->setValue(0.0);
+        addAndMakeVisible(delayModDepth.get());
         
         // Sync toggle
         delaySyncBtn.setButtonText("Sync");
@@ -275,27 +306,44 @@ public:
         fxLabel.setBounds(bounds.removeFromTop(20));
         bounds.removeFromTop(Spacing::sm);
         
-        // Reverb
-        auto reverbRow = bounds.removeFromTop(50);
-        int knobSpacing = (reverbRow.getWidth() - 64) / 2;
-        reverbSize->setBounds(reverbRow.removeFromLeft(32).withSizeKeepingCentre(32, 50));
-        reverbRow.removeFromLeft(knobSpacing);
-        reverbMix->setBounds(reverbRow.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        // Reverb (4 knobs)
+        auto reverbRow1 = bounds.removeFromTop(50);
+        int knobSpacing = (reverbRow1.getWidth() - 32 * 4) / 3;
+        reverbSize->setBounds(reverbRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        reverbRow1.removeFromLeft(knobSpacing);
+        reverbDamp->setBounds(reverbRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        reverbRow1.removeFromLeft(knobSpacing);
+        reverbPreDelay->setBounds(reverbRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        reverbRow1.removeFromLeft(knobSpacing);
+        reverbDiffusion->setBounds(reverbRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        
+        bounds.removeFromTop(Spacing::xs);
+        
+        auto reverbRow2 = bounds.removeFromTop(50);
+        reverbMix->setBounds(reverbRow2.withSizeKeepingCentre(32, 50));
         
         bounds.removeFromTop(Spacing::sm);
         
         // Delay
         auto delayRow1 = bounds.removeFromTop(50);
+        int dKnobSpacing = (delayRow1.getWidth() - 32 * 3) / 2;
         delayTime->setBounds(delayRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
-        delayRow1.removeFromLeft(knobSpacing);
+        delayRow1.removeFromLeft(dKnobSpacing);
         delayFeedback->setBounds(delayRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        delayRow1.removeFromLeft(dKnobSpacing);
+        delayMix->setBounds(delayRow1.removeFromLeft(32).withSizeKeepingCentre(32, 50));
         
         bounds.removeFromTop(Spacing::xs);
         
         auto delayRow2 = bounds.removeFromTop(50);
-        delayMix->setBounds(delayRow2.removeFromLeft(32).withSizeKeepingCentre(32, 50));
-        delayRow2.removeFromLeft(knobSpacing);
-        delaySyncBtn.setBounds(delayRow2.removeFromLeft(32).withHeight(24));
+        int midWidth = 80;
+        delayMode.setBounds(delayRow2.removeFromLeft(midWidth));
+        delayRow2.removeFromLeft(Spacing::sm);
+        delayModRate->setBounds(delayRow2.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        delayRow2.removeFromLeft(dKnobSpacing);
+        delayModDepth->setBounds(delayRow2.removeFromLeft(32).withSizeKeepingCentre(32, 50));
+        delayRow2.removeFromLeft(Spacing::sm);
+        delaySyncBtn.setBounds(delayRow2.removeFromLeft(48).withHeight(24));
     }
     
     void setClipping(bool clipping)
@@ -315,6 +363,17 @@ public:
     
     StereoMeter& getMeters() { return meters; }
     RotaryKnob& getOutputGain() { return *outputGain; }
+    RotaryKnob& getReverbSize() { return *reverbSize; }
+    RotaryKnob& getReverbDamp() { return *reverbDamp; }
+    RotaryKnob& getReverbMix() { return *reverbMix; }
+    RotaryKnob& getReverbPreDelay() { return *reverbPreDelay; }
+    RotaryKnob& getReverbDiffusion() { return *reverbDiffusion; }
+    RotaryKnob& getDelayTime() { return *delayTime; }
+    RotaryKnob& getDelayFeedback() { return *delayFeedback; }
+    RotaryKnob& getDelayMix() { return *delayMix; }
+    juce::ComboBox& getDelayMode() { return delayMode; }
+    RotaryKnob& getDelayModRate() { return *delayModRate; }
+    RotaryKnob& getDelayModDepth() { return *delayModDepth; }
     
 private:
     void applyTheme()
@@ -334,10 +393,16 @@ private:
     
     juce::Label fxLabel;
     std::unique_ptr<RotaryKnob> reverbSize;
+    std::unique_ptr<RotaryKnob> reverbDamp;
     std::unique_ptr<RotaryKnob> reverbMix;
+    std::unique_ptr<RotaryKnob> reverbPreDelay;
+    std::unique_ptr<RotaryKnob> reverbDiffusion;
     std::unique_ptr<RotaryKnob> delayTime;
     std::unique_ptr<RotaryKnob> delayFeedback;
     std::unique_ptr<RotaryKnob> delayMix;
+    juce::ComboBox delayMode;
+    std::unique_ptr<RotaryKnob> delayModRate;
+    std::unique_ptr<RotaryKnob> delayModDepth;
     juce::TextButton delaySyncBtn;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterPanel)

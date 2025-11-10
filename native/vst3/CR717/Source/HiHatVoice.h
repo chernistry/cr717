@@ -22,6 +22,14 @@ public:
         for (int i = 0; i < 6; ++i) {
             phases[i] = 0.0f;
         }
+
+        // Post filter for tone shaping via parameters (usually highpass for brightness)
+        juce::dsp::ProcessSpec spec{ sr, static_cast<juce::uint32>(maxBlockSize), 1 };
+        postFilter.reset();
+        postFilter.prepare(spec);
+        postFilter.setType(juce::dsp::StateVariableTPTFilterType::highpass);
+        lastCutoff = -1.0f;
+        lastRes = -1.0f;
     }
 
     void trigger(float velocity) override
@@ -65,6 +73,19 @@ public:
             filtered = bp2.processSingleSampleRaw(filtered);
             
             float sample = filtered * env * level.getNextValue();
+
+            if (targetFilterCutoff > 0.0f)
+            {
+                if (lastCutoff != targetFilterCutoff || lastRes != targetFilterRes)
+                {
+                    postFilter.setCutoffFrequency(targetFilterCutoff);
+                    float q = juce::jmap(targetFilterRes, 0.0f, 1.0f, 0.5f, 10.0f);
+                    postFilter.setResonance(q);
+                    lastCutoff = targetFilterCutoff;
+                    lastRes = targetFilterRes;
+                }
+                sample = postFilter.processSample(0, sample);
+            }
             
             // Expo decay: 190ms
             float decayRate = std::exp(-1.0f / (0.19f * static_cast<float>(sampleRate)));
@@ -79,6 +100,10 @@ private:
     float env = 0.0f;
     bool active = false;
     juce::IIRFilter bp1, bp2;
+
+    juce::dsp::StateVariableTPTFilter<float> postFilter;
+    float lastCutoff = -1.0f;
+    float lastRes = -1.0f;
 };
 
 class OpenHiHatVoice : public Voice
@@ -99,6 +124,14 @@ public:
         for (int i = 0; i < 6; ++i) {
             phases[i] = 0.0f;
         }
+
+        // Post filter
+        juce::dsp::ProcessSpec spec{ sr, static_cast<juce::uint32>(maxBlockSize), 1 };
+        postFilter.reset();
+        postFilter.prepare(spec);
+        postFilter.setType(juce::dsp::StateVariableTPTFilterType::highpass);
+        lastCutoff = -1.0f;
+        lastRes = -1.0f;
     }
 
     void trigger(float velocity) override
@@ -144,6 +177,19 @@ public:
             filtered = bp2.processSingleSampleRaw(filtered);
             
             float sample = filtered * env * level.getNextValue();
+
+            if (targetFilterCutoff > 0.0f)
+            {
+                if (lastCutoff != targetFilterCutoff || lastRes != targetFilterRes)
+                {
+                    postFilter.setCutoffFrequency(targetFilterCutoff);
+                    float q = juce::jmap(targetFilterRes, 0.0f, 1.0f, 0.5f, 10.0f);
+                    postFilter.setResonance(q);
+                    lastCutoff = targetFilterCutoff;
+                    lastRes = targetFilterRes;
+                }
+                sample = postFilter.processSample(0, sample);
+            }
             
             // Expo decay: 490ms (longer than CH)
             float baseDecayTime = 0.49f * (0.5f + currentDecay * 0.5f);
@@ -159,4 +205,7 @@ private:
     float env = 0.0f;
     bool active = false;
     juce::IIRFilter bp1, bp2;
+    juce::dsp::StateVariableTPTFilter<float> postFilter;
+    float lastCutoff = -1.0f;
+    float lastRes = -1.0f;
 };

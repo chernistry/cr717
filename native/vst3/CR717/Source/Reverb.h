@@ -20,6 +20,16 @@ public:
         preDelayLine.setMaximumDelayInSamples(static_cast<int>(sampleRate * 0.1));
         preDelayLine.setDelay(static_cast<float>(sampleRate * 0.02)); // 20ms default
         
+        // Diffusers (first-order all-pass stages pre reverb)
+        diffuserL1.reset(); diffuserL2.reset();
+        diffuserR1.reset(); diffuserR2.reset();
+        diffuserL1.setType(juce::dsp::FirstOrderTPTFilterType::allpass);
+        diffuserL2.setType(juce::dsp::FirstOrderTPTFilterType::allpass);
+        diffuserR1.setType(juce::dsp::FirstOrderTPTFilterType::allpass);
+        diffuserR2.setType(juce::dsp::FirstOrderTPTFilterType::allpass);
+        diffuserL1.prepare(spec); diffuserL2.prepare(spec);
+        diffuserR1.prepare(spec); diffuserR2.prepare(spec);
+        
         juce::dsp::Reverb::Parameters params;
         params.roomSize = 0.5f;
         params.damping = 0.5f;
@@ -69,6 +79,14 @@ public:
     void setDiffusion(float diff)
     {
         diffusion = juce::jlimit(0.0f, 1.0f, diff);
+        // Map diffusion into all-pass cutoff frequencies
+        // Lower diffusion -> lower cutoff (less smearing), higher diffusion -> higher cutoff
+        float f1 = juce::jmap(diffusion, 0.0f, 1.0f, 800.0f, 4000.0f);
+        float f2 = juce::jmap(diffusion, 0.0f, 1.0f, 1200.0f, 6000.0f);
+        diffuserL1.setCutoffFrequency(f1);
+        diffuserL2.setCutoffFrequency(f2);
+        diffuserR1.setCutoffFrequency(f1);
+        diffuserR2.setCutoffFrequency(f2);
     }
 
     void process(juce::AudioBuffer<float>& buffer)
@@ -78,6 +96,16 @@ public:
         // Apply pre-delay
         juce::dsp::ProcessContextReplacing<float> preDelayContext(block);
         preDelayLine.process(preDelayContext);
+        
+        // Apply pre-diffusion via two all-pass stages per channel
+        auto* left = buffer.getWritePointer(0);
+        auto* right = buffer.getWritePointer(1);
+        int n = buffer.getNumSamples();
+        for (int i = 0; i < n; ++i)
+        {
+            left[i]  = diffuserL2.processSample(0, diffuserL1.processSample(0, left[i]));
+            right[i] = diffuserR2.processSample(1, diffuserR1.processSample(1, right[i]));
+        }
         
         // Apply reverb
         juce::dsp::ProcessContextReplacing<float> context(block);
@@ -93,6 +121,7 @@ public:
 private:
     juce::dsp::Reverb reverb;
     juce::dsp::DelayLine<float> preDelayLine{8192};
+    juce::dsp::FirstOrderTPTFilter<float> diffuserL1, diffuserL2, diffuserR1, diffuserR2;
     double sampleRate = 48000.0;
     float diffusion = 0.7f;
 };

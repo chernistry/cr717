@@ -53,6 +53,11 @@ public:
     void startSequencer();
     void stopSequencer();
 
+    // Metering (UI thread safe queries)
+    float getPeakLevel(int channel) const { return peakLevels[channel].load(); }
+    float getRMSLevel(int channel) const { return rmsLevels[channel].load(); }
+    bool isClipping() const { return clipping.load(); }
+
 private:
     juce::AudioProcessorValueTreeState apvts;
     
@@ -86,6 +91,11 @@ private:
     
     double nextStepTime = 0.0;
     int samplesUntilNextStep = 0;
+
+    // Metering state (atomic for cross-thread use)
+    std::atomic<float> peakLevels[2] { 0.0f, 0.0f };
+    std::atomic<float> rmsLevels[2]  { 0.0f, 0.0f };
+    std::atomic<bool>  clipping { false };
 
     void handleMidiMessage(const juce::MidiMessage& msg);
     Voice* getVoiceForNote(int noteNumber);

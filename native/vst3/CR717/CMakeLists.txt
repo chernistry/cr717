@@ -83,6 +83,10 @@ target_compile_definitions(CR717 PUBLIC
     JUCE_DISPLAY_SPLASH_SCREEN=0
 )
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(CR717 PRIVATE -Wno-deprecated-declarations)
+endif()
+
 target_link_libraries(CR717 PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp

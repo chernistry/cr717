@@ -85,6 +85,14 @@ public:
     void process(juce::AudioBuffer<float>& buffer, bool compEnabled, bool limiterEnabled, bool clipperEnabled)
     {
         juce::ScopedNoDenormals noDenormals;
+        const int blockSize = buffer.getNumSamples();
+        // Ensure oversamplers are provisioned for this block size
+        if (oversampling)
+            oversampling->initProcessing(blockSize);
+        if (clipperOversampling2x)
+            clipperOversampling2x->initProcessing(blockSize);
+        if (clipperOversampling4x)
+            clipperOversampling4x->initProcessing(blockSize);
         
         if (compEnabled)
             processCompressor(buffer);

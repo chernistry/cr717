@@ -54,7 +54,7 @@ public:
             
             // Glow effect
             juce::DropShadow glow(Colors::accent.withAlpha(0.6f), 8, {0, 0});
-            glow.drawForRoundedRectangle(g, bounds.toNearestInt(), Radius::md);
+            glow.drawForRectangle(g, bounds.toNearestInt());
         }
         
         // Hover effect
@@ -193,6 +193,12 @@ public:
     
     int getStepIndex() const { return step; }
     int getVoiceIndex() const { return voice; }
+    
+    void setStepIndex(int newIndex)
+    {
+        step = newIndex;
+        repaint();
+    }
     
     std::function<void(int step, int voice, State state)> onStateChanged;
     

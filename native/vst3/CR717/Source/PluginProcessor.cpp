@@ -58,6 +58,16 @@ void CR717Processor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
 
     buffer.clear();
+    
+    int numSamples = buffer.getNumSamples();
+    
+    // Ensure temp buffers are large enough
+    if (voiceBuffer.getNumSamples() < numSamples)
+    {
+        voiceBuffer.setSize(2, numSamples, false, false, true);
+        reverbBuffer.setSize(2, numSamples, false, false, true);
+        delayBuffer.setSize(2, numSamples, false, false, true);
+    }
 
     // Update host info
     if (auto* playHead = getPlayHead())
@@ -72,8 +82,6 @@ void CR717Processor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Update voice parameters from APVTS
     updateVoiceParameters();
-
-    int numSamples = buffer.getNumSamples();
 
     // Process internal sequencer
     if (sequencer.getPlaying())
@@ -93,7 +101,11 @@ void CR717Processor::processBlock(juce::AudioBuffer<float>& buffer,
                 for (int v = 0; v < 12; ++v)
                 {
                     if (sequencer.getStep(v, currentStep))
-                        voices[v]->trigger(0.8f);
+                    {
+                        bool accent = sequencer.getAccent(v, currentStep);
+                        float velocity = accent ? 1.0f : 0.8f;
+                        voices[v]->trigger(velocity);
+                    }
                 }
                 
                 // Advance to next step
@@ -173,6 +185,30 @@ void CR717Processor::processBlock(juce::AudioBuffer<float>& buffer,
     // Apply master level
     float masterLevel = apvts.getRawParameterValue(ParamIDs::masterLevel)->load();
     buffer.applyGain(masterLevel);
+
+    // Metering: update peak and RMS per channel
+    const int numSamplesForMetering = buffer.getNumSamples();
+    const int numCh = juce::jmin(2, buffer.getNumChannels());
+    float maxAbs[2] = {0.0f, 0.0f};
+    float sumSq[2] = {0.0f, 0.0f};
+    for (int ch = 0; ch < numCh; ++ch)
+    {
+        const float* data = buffer.getReadPointer(ch);
+        float localMax = 0.0f;
+        float localSum = 0.0f;
+        for (int i = 0; i < numSamplesForMetering; ++i)
+        {
+            float s = data[i];
+            float a = std::abs(s);
+            if (a > localMax) localMax = a;
+            localSum += s * s;
+        }
+        maxAbs[ch] = localMax;
+        sumSq[ch] = localSum;
+        peakLevels[ch].store(juce::jmax(peakLevels[ch].load() * 0.95f, localMax));
+        rmsLevels[ch].store(std::sqrt(localSum / juce::jmax(1, numSamplesForMetering)));
+    }
+    clipping.store((maxAbs[0] > 0.999f) || (maxAbs[1] > 0.999f));
 }
 
 void CR717Processor::updateVoiceParameters()

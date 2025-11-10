@@ -18,6 +18,14 @@ public:
         // Prepare click buffer
         clickPhase = 0.0f;
         clickEnv = 0.0f;
+
+        // Post filter (voice filter parameters)
+        juce::dsp::ProcessSpec spec{ sr, static_cast<juce::uint32>(maxBlockSize), 1 };
+        postFilter.reset();
+        postFilter.prepare(spec);
+        postFilter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+        lastCutoff = -1.0f;
+        lastRes = -1.0f;
     }
 
     void trigger(float velocity) override
@@ -95,6 +103,20 @@ public:
             float decayRate = std::exp(-1.0f / (decayTime * static_cast<float>(sampleRate)));
             env *= decayRate;
 
+            // Apply optional post-filter using targetFilterCutoff/Res
+            if (targetFilterCutoff > 0.0f)
+            {
+                if (lastCutoff != targetFilterCutoff || lastRes != targetFilterRes)
+                {
+                    postFilter.setCutoffFrequency(targetFilterCutoff);
+                    float q = juce::jmap(targetFilterRes, 0.0f, 1.0f, 0.5f, 10.0f);
+                    postFilter.setResonance(q);
+                    lastCutoff = targetFilterCutoff;
+                    lastRes = targetFilterRes;
+                }
+                sample = postFilter.processSample(0, sample);
+            }
+
             sample *= currentLevel;
             applyPan(buffer, startSample + i, numSamples, sample);
         }
@@ -115,4 +137,8 @@ private:
     // Filters
     float lastLpf = 0.0f;
     float lastHpf = 0.0f;
+
+    juce::dsp::StateVariableTPTFilter<float> postFilter;
+    float lastCutoff = -1.0f;
+    float lastRes = -1.0f;
 };

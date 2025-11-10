@@ -26,6 +26,11 @@ public:
         bpmSlider.setValue(120.0);
         bpmSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 50, 24);
         bpmSlider.setTooltip("Tempo (60-240 BPM)");
+        bpmSlider.onValueChange = [this]
+        {
+            if (onBPMChange)
+                onBPMChange(bpmSlider.getValue());
+        };
         addAndMakeVisible(bpmSlider);
         
         // Preset selector
@@ -35,6 +40,11 @@ public:
         presetCombo.addItem("Techno", 4);
         presetCombo.setSelectedId(1);
         presetCombo.setTooltip("Select preset");
+        presetCombo.onChange = [this]
+        {
+            if (onPresetChange)
+                onPresetChange(presetCombo.getSelectedId() - 1);
+        };
         addAndMakeVisible(presetCombo);
         
         // Pattern selector
@@ -47,6 +57,11 @@ public:
             btn->setTooltip("Pattern " + juce::String(char('A' + i)));
             btn->setClickingTogglesState(true);
             btn->setRadioGroupId(1);
+            btn->onClick = [this, i]
+            {
+                if (onPatternChange)
+                    onPatternChange(i);
+            };
             patternButtons.add(btn);
             addAndMakeVisible(btn);
         }
@@ -124,6 +139,26 @@ public:
     std::function<void(int)> onPresetChange;
     std::function<void(int)> onPatternChange;
     
+    // Populate preset combo with display names
+    void setPresetList(const juce::StringArray& names)
+    {
+        presetCombo.clear(juce::dontSendNotification);
+        for (int i = 0; i < names.size(); ++i)
+            presetCombo.addItem(names[i], i + 1);
+        if (names.size() > 0)
+            presetCombo.setSelectedId(1, juce::dontSendNotification);
+    }
+    
+    void setSelectedPresetIndex(int index)
+    {
+        presetCombo.setSelectedId(index + 1, juce::dontSendNotification);
+    }
+    
+    void setBPM(double bpm)
+    {
+        bpmSlider.setValue(bpm, juce::dontSendNotification);
+    }
+
 private:
     void applyTheme()
     {

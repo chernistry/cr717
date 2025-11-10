@@ -19,6 +19,14 @@ public:
         hpFilter.setCoefficients(juce::IIRCoefficients::makeHighPass(sr, 700.0));
         // BP filter at 1500 Hz for noise
         bpFilter.setCoefficients(juce::IIRCoefficients::makeBandPass(sr, 1500.0, 1.0));
+
+        // Post filter for voice filter parameters
+        juce::dsp::ProcessSpec spec{ sr, static_cast<juce::uint32>(maxBlockSize), 1 };
+        postFilter.reset();
+        postFilter.prepare(spec);
+        postFilter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+        lastCutoff = -1.0f;
+        lastRes = -1.0f;
     }
 
     void trigger(float velocity) override
@@ -73,6 +81,20 @@ public:
             float noiseMix = 0.6f * (1.0f - currentTone * 0.5f);  // Snappy control
             float sample = ((body1 + body2) * bodyMix + noise * noiseMix) * currentLevel;
 
+            // Optional post-filter
+            if (targetFilterCutoff > 0.0f)
+            {
+                if (lastCutoff != targetFilterCutoff || lastRes != targetFilterRes)
+                {
+                    postFilter.setCutoffFrequency(targetFilterCutoff);
+                    float q = juce::jmap(targetFilterRes, 0.0f, 1.0f, 0.5f, 10.0f);
+                    postFilter.setResonance(q);
+                    lastCutoff = targetFilterCutoff;
+                    lastRes = targetFilterRes;
+                }
+                sample = postFilter.processSample(0, sample);
+            }
+
             // Body decay: 250ms, Noise decay: 200ms
             float bodyDecayRate = std::exp(-1.0f / (0.25f * static_cast<float>(sampleRate)));
             float noiseDecayRate = std::exp(-1.0f / (0.20f * static_cast<float>(sampleRate)));
@@ -93,4 +115,8 @@ private:
     juce::Random random;
     juce::IIRFilter hpFilter;
     juce::IIRFilter bpFilter;
+
+    juce::dsp::StateVariableTPTFilter<float> postFilter;
+    float lastCutoff = -1.0f;
+    float lastRes = -1.0f;
 };

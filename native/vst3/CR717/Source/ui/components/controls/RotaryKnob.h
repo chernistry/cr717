@@ -114,7 +114,7 @@ public:
         if (isMouseOver() && !isMouseButtonDown())
         {
             juce::DropShadow glow(Colors::accent.withAlpha(0.25f), 8, {0, 0});
-            glow.drawForEllipse(g, bounds);
+            glow.drawForRectangle(g, bounds.toNearestInt());
         }
         
         // Focus indicator
@@ -131,7 +131,7 @@ public:
         auto knobBounds = getKnobBounds();
         
         // Value label (inside knob)
-        valueLabel.setBounds(knobBounds.reduced(8));
+        valueLabel.setBounds(knobBounds.reduced(8).toNearestInt());
         
         // Parameter label (below knob)
         if (labelText.isNotEmpty())
