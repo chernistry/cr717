@@ -166,8 +166,9 @@ void CR717Processor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Master dynamics
     bool compEnabled = apvts.getRawParameterValue(ParamIDs::compEnabled)->load() > 0.5f;
+    bool clipperEnabled = apvts.getRawParameterValue(ParamIDs::clipperEnabled)->load() > 0.5f;
     bool limiterEnabled = apvts.getRawParameterValue(ParamIDs::limiterEnabled)->load() > 0.5f;
-    masterDynamics.process(buffer, compEnabled, limiterEnabled);
+    masterDynamics.process(buffer, compEnabled, limiterEnabled, clipperEnabled);
 
     // Apply master level
     float masterLevel = apvts.getRawParameterValue(ParamIDs::masterLevel)->load();
@@ -286,6 +287,13 @@ void CR717Processor::updateFXParameters()
     masterDynamics.setLimiterKnee(apvts.getRawParameterValue(ParamIDs::limiterKnee)->load());
     masterDynamics.setLimiterLookahead(apvts.getRawParameterValue(ParamIDs::limiterLookahead)->load());
     masterDynamics.setLimiterOversampling(apvts.getRawParameterValue(ParamIDs::limiterOversampling)->load() > 0.5f);
+    
+    // Clipper
+    masterDynamics.setClipperDrive(apvts.getRawParameterValue(ParamIDs::clipperDrive)->load());
+    masterDynamics.setClipperOutput(apvts.getRawParameterValue(ParamIDs::clipperOutput)->load());
+    masterDynamics.setClipperMix(apvts.getRawParameterValue(ParamIDs::clipperMix)->load());
+    masterDynamics.setClipperCurve(static_cast<int>(apvts.getRawParameterValue(ParamIDs::clipperCurve)->load()));
+    masterDynamics.setClipperOversampling(static_cast<int>(apvts.getRawParameterValue(ParamIDs::clipperOversampling)->load()));
 }
 
 void CR717Processor::handleMidiMessage(const juce::MidiMessage& msg)

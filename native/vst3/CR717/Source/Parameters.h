@@ -132,6 +132,12 @@ namespace ParamIDs
     inline constexpr auto limiterLookahead = "limiterLookahead";
     inline constexpr auto limiterOversampling = "limiterOversampling";
     inline constexpr auto limiterEnabled = "limiterEnabled";
+    inline constexpr auto clipperDrive = "clipperDrive";
+    inline constexpr auto clipperOutput = "clipperOutput";
+    inline constexpr auto clipperMix = "clipperMix";
+    inline constexpr auto clipperCurve = "clipperCurve";
+    inline constexpr auto clipperOversampling = "clipperOversampling";
+    inline constexpr auto clipperEnabled = "clipperEnabled";
 }
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
@@ -267,6 +273,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::limiterLookahead, 1}, "Limiter Lookahead", juce::NormalisableRange<float>(0.0f, 10.0f), 5.0f));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::limiterOversampling, 1}, "Limiter Oversampling", true));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::limiterEnabled, 1}, "Limiter Enabled", true));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::clipperDrive, 1}, "Clipper Drive", juce::NormalisableRange<float>(0.0f, 24.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::clipperOutput, 1}, "Clipper Output", juce::NormalisableRange<float>(-12.0f, 12.0f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{ParamIDs::clipperMix, 1}, "Clipper Mix", juce::NormalisableRange<float>(0.0f, 100.0f), 100.0f));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{ParamIDs::clipperCurve, 1}, "Clipper Curve", juce::StringArray{"Tanh", "Atan", "Poly"}, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{ParamIDs::clipperOversampling, 1}, "Clipper OS", juce::StringArray{"Off", "2x", "4x"}, 2));
+    layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{ParamIDs::clipperEnabled, 1}, "Clipper Enabled", false));
     
     return layout;
 }

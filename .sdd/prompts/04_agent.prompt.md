@@ -1,5 +1,23 @@
 # Agent Prompt Template
 
+IMPORTANT — VST-ONLY MODE (Web Version Deprecated)
+- The browser/Web Audio version is deprecated and kept only for archive.
+- Do NOT implement or adjust anything for the web build.
+- Execute ONLY VST3/JUCE tasks per `.sdd/best_practices_vst.md` and native coding rules.
+- If any section below references Web Audio/Node/Playwright/etc., treat it as ARCHIVE and ignore.
+
+VST/JUCE Quickstart
+- Framework: JUCE 7/8, formats: VST3 (+ AU on macOS).
+- Parameters/state: `AudioProcessorValueTreeState` with stable IDs; GUI attachments.
+- DSP: real-time safe (no alloc/locks), `ScopedNoDenormals`, `SmoothedValue`, `dsp::Oversampling` where needed.
+- Testing: C++ unit tests (offline buffer renders) + `pluginval` in CI.
+- Distribution: code sign + notarize on macOS; standard install paths.
+- Performance gates: stable block time, no denormals, CPU budget per best_practices_vst.
+
+---
+
+ARCHIVE (WEB VERSION) — DO NOT USE FOR IMPLEMENTATION
+
 You are the Implementing Agent (CLI/IDE). Work strictly from specifications.
 
 Project Context:

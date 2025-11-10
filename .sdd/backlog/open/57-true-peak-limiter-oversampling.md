@@ -1,10 +1,10 @@
-# 57 — True-Peak Limiter with Oversampling (Web Audio)
+# 57 — True-Peak Limiter with Oversampling (JUCE/VST3)
 
-Read `.sdd/architect.md`, `.sdd/best_practices_vst.md` (§4 Anti-aliasing), and `.sdd/coding_rules.md` first.
+Read `.sdd/best_practices_vst.md` (§4 Anti-aliasing) and native coding rules first.
 
 Context
 - Spec: `.sdd/backlog/tasks/004-rehaul-sounds-implement.md` (§1.2 Limiter)
-- Goal: Lookahead limiter with true-peak detection (oversampled), clean brick-wall behavior, minimal artifacts.
+- Goal: Lookahead limiter with true-peak detection (oversampled), clean brick-wall behavior, minimal artifacts (JUCE/C++).
 
 Dependencies
 - Ticket 56 (compressor) — order in master chain: Compressor → Limiter
@@ -20,22 +20,22 @@ Scope
 Acceptance Criteria
 - No overshoots beyond Ceiling with true-peak on (±0.1 dB tolerance)
 - Kick/snare transients preserved with reasonable release; no obvious distortion at −0.3 dBFS ceiling
-- Unit test renders a transient buffer through the limiter; verifies peaks <= ceiling (OfflineAudioContext)
+- C++ unit test renders a transient buffer through the limiter; verifies peaks <= ceiling (offline render harness)
 
 Implementation Steps
-1) Create `src/audio/dynamics/limiter.ts` with oversampled detection path
-2) 4× upsample detector path using `OfflineAudioContext`-free FIR (precomputed taps)
-3) Lookahead via DelayNode; gain computer applies fast attack to clamp peaks
-4) Parameter smoothing for threshold/ceiling/release
-5) Wire into master chain after compressor
-6) Tests in `tests/unit/dynamics/limiter.test.ts`
+1) Files (native VST3):
+   - `native/vst3/CR717/Source/dsp/dynamics/Limiter.h/.cpp`
+   - `native/vst3/CR717/Source/processing/MasterBus.*` (chain after compressor)
+2) True-peak detection: 4× oversampling via `juce::dsp::Oversampling<float>` (linear-phase FIR)
+3) Lookahead: `juce::dsp::DelayLine<float>`; instant attack gain computer to clamp peaks
+4) Parameter smoothing for threshold/ceiling/release via `juce::SmoothedValue`
+5) Tests: `native/tests/unit/dsp/test_limiter.cpp`
 
 Affected Files
-- `src/audio/dynamics/limiter.ts` (new)
-- `src/audio/mix/master-bus.ts` (chain)
-- `tests/unit/dynamics/limiter.test.ts` (new)
+- `native/vst3/CR717/Source/dsp/dynamics/Limiter.*` (new)
+- `native/vst3/CR717/Source/processing/MasterBus.*` (update)
+- `native/tests/unit/dsp/test_limiter.cpp` (new)
 
 Risks & Mitigations
 - CPU from oversampling: allow toggle (on by default); use short FIR
-- Latency from lookahead: expose; default acceptable for browser synth
-
+- Latency from lookahead: document and expose; keep acceptable for plugin use

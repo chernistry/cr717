@@ -1,10 +1,10 @@
 # 59 — FX: Reverb (Freeverb-like) and Delay (Tempo-Sync, Filters, Ping-Pong)
 
-Read `.sdd/architect.md`, `.sdd/best_practices_vst.md` (§4), and `.sdd/coding_rules.md` first.
+Read `.sdd/best_practices_vst.md` (§4) and native coding rules first.
 
 Context
 - Spec: `.sdd/backlog/tasks/004-rehaul-sounds-implement.md` (§2.1 Reverb, §2.2 Delay)
-- Goal: Lightweight, musical reverb and delay with per-voice sends and master returns.
+- Goal: Lightweight, musical reverb and delay with per-voice sends and master returns (JUCE/C++ implementation).
 
 Dependencies
 - Ticket 49 (UI Mixer & Sends) — existing spec for sends/returns
@@ -27,21 +27,22 @@ Acceptance Criteria
 - Sends from voices reach FX returns; Wet/Dry behaves as expected
 - Delay ping-pong alternates L/R; filters darken repeats musically
 - Reverb tail respects damping and predelay; width control collapses to mono at 0%
-- Unit tests render simple impulses and check decay/envelope behavior (OfflineAudioContext)
+- C++ unit tests render impulses and check decay/envelope behavior (offline render harness)
 
 Implementation Steps
-1) Create `src/audio/fx/reverb.ts` and `src/audio/fx/delay.ts`
-2) Add `src/audio/mix/sends.ts` to manage per-voice sends → FX returns
-3) Provide tempo-sync helper in `src/audio/utils/tempo.ts` (note division → ms)
-4) Wire returns into master chain pre-dynamics (or ADR if post)
-5) Tests: `tests/unit/fx/reverb.test.ts`, `tests/unit/fx/delay.test.ts`
+1) Files (native VST3):
+   - `native/vst3/CR717/Source/dsp/fx/Reverb.h/.cpp` (Freeverb-like or `juce::dsp::Reverb` wrapper)
+   - `native/vst3/CR717/Source/dsp/fx/Delay.h/.cpp` (`juce::dsp::DelayLine<float>` + filters)
+   - `native/vst3/CR717/Source/processing/Sends.h/.cpp` (per-voice sends management)
+2) Tempo sync helper: `native/vst3/CR717/Source/dsp/utils/Tempo.h/.cpp`
+3) Wire returns into master chain pre-dynamics (or ADR if post)
+4) Tests: `native/tests/unit/dsp/test_reverb.cpp`, `test_delay.cpp`
 
 Affected Files
-- `src/audio/fx/reverb.ts`, `src/audio/fx/delay.ts` (new)
-- `src/audio/mix/sends.ts` (new), `src/audio/mix/master-bus.ts`
-- `tests/unit/fx/*.test.ts`
+- `native/vst3/CR717/Source/dsp/fx/Reverb.*`, `Delay.*` (new)
+- `native/vst3/CR717/Source/processing/Sends.*`, `MasterBus.*`
+- `native/tests/unit/dsp/test_reverb.cpp`, `test_delay.cpp`
 
 Risks & Mitigations
 - CPU from stereo reverb: optimize comb/allpass counts; parameterize quality
 - Feedback instability: clamp feedback < 0.98; denormal guards
-

@@ -1,10 +1,10 @@
 # 62 — Calibration, Meter Alignment, Tests, and Performance
 
-Read `.sdd/architect.md`, `.sdd/coding_rules.md`, and Ticket 48 (meters) first.
+Read `.sdd/best_practices_vst.md`, native coding rules, and Ticket 48 (meters) first.
 
 Context
 - Spec: `.sdd/backlog/tasks/004-rehaul-sounds-implement.md` (global validation)
-- Goal: Calibrate gain structure across voices → FX → dynamics; align meters; add unit tests for dynamics/FX; verify performance budgets.
+- Goal: Calibrate gain structure across voices → FX → dynamics; align meters; add C++ unit tests for dynamics/FX; verify performance budgets in plugin context.
 
 Dependencies
 - Tickets 56–59 (dynamics/FX) and 60 (voice params)
@@ -23,17 +23,16 @@ Acceptance Criteria
 - E2E playback shows 0 long tasks; memory <100MB after 5 min; jitter <2 ms
 
 Implementation Steps
-1) Add fixtures: test loops/impulses under `tests/fixtures/`
-2) Unit tests for compressor/limiter/clipper and FX using OfflineAudioContext
-3) Integration test: full chain render and meter reading assertion
-4) Perf script: dev-only measure CPU/jitter and log summary
+1) Add fixtures: test loops/impulses under `native/tests/fixtures/`
+2) C++ unit tests for compressor/limiter/clipper and FX using offline buffer renders
+3) Integration test: offline render of full chain; assert meter readings
+4) Perf: measure block processing time in a host-simulated harness; ensure pluginval passes
 
 Affected Files
-- `tests/fixtures/*`, `tests/unit/dynamics/*.test.ts`, `tests/unit/fx/*.test.ts`
-- `tests/integration/audio-chain.test.ts`
-- `src/ui/visualizer.ts` (optional perf panel hooks)
+- `native/tests/fixtures/*`, `native/tests/unit/dsp/*`
+- `native/tests/integration/audio_chain_tests.cpp`
+- `native/vst3/CR717/Source/ui/editor/*` (optional meter hooks)
 
 Risks & Mitigations
-- Cross-browser differences: focus Chrome stable; note Safari quirks
-- OfflineAudioContext limitations: test relative properties, not absolute spectra
-
+- Host differences: validate in at least one DAW (e.g., Live/Reaper) after pluginval
+- Offline render limitations: test relative properties, not absolute spectra

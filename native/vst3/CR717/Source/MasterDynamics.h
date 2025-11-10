@@ -30,6 +30,12 @@ public:
         oversampling = std::make_unique<juce::dsp::Oversampling<float>>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
         oversampling->initProcessing(maxBlockSize);
         
+        // Clipper oversampling (2x and 4x)
+        clipperOversampling2x = std::make_unique<juce::dsp::Oversampling<float>>(2, 1, juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
+        clipperOversampling2x->initProcessing(maxBlockSize);
+        clipperOversampling4x = std::make_unique<juce::dsp::Oversampling<float>>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple);
+        clipperOversampling4x->initProcessing(maxBlockSize);
+        
         // Smoothed parameters
         smoothedThreshold.reset(sampleRate, 0.02);
         smoothedRatio.reset(sampleRate, 0.02);
@@ -41,6 +47,9 @@ public:
         smoothedLimiterCeiling.reset(sampleRate, 0.02);
         smoothedLimiterRelease.reset(sampleRate, 0.02);
         smoothedLimiterKnee.reset(sampleRate, 0.02);
+        smoothedClipperDrive.reset(sampleRate, 0.02);
+        smoothedClipperOutput.reset(sampleRate, 0.02);
+        smoothedClipperMix.reset(sampleRate, 0.02);
         
         // Auto-makeup RMS tracking (300ms)
         autoMakeupWindowSize = static_cast<int>(sampleRate * 0.3);
@@ -67,18 +76,24 @@ public:
     void setLimiterKnee(float db) { smoothedLimiterKnee.setTargetValue(db); }
     void setLimiterLookahead(float ms) { limiterLookaheadMs = ms; }
     void setLimiterOversampling(bool enabled) { limiterOversamplingEnabled = enabled; }
+    void setClipperDrive(float db) { smoothedClipperDrive.setTargetValue(db); }
+    void setClipperOutput(float db) { smoothedClipperOutput.setTargetValue(db); }
+    void setClipperMix(float percent) { smoothedClipperMix.setTargetValue(percent); }
+    void setClipperCurve(int curve) { clipperCurve = curve; } // 0=tanh, 1=atan, 2=poly
+    void setClipperOversampling(int factor) { clipperOversamplingFactor = factor; } // 0=off, 1=2x, 2=4x
 
-    void process(juce::AudioBuffer<float>& buffer, bool compEnabled, bool limiterEnabled)
+    void process(juce::AudioBuffer<float>& buffer, bool compEnabled, bool limiterEnabled, bool clipperEnabled)
     {
         juce::ScopedNoDenormals noDenormals;
         
         if (compEnabled)
             processCompressor(buffer);
         
+        if (clipperEnabled)
+            processClipper(buffer);
+        
         if (limiterEnabled)
             processTruePeakLimiter(buffer);
-        
-        softClip(buffer);
     }
 
     float getGainReduction() const { return gainReduction; }
@@ -90,6 +105,10 @@ public:
         scHpf.reset();
         if (oversampling)
             oversampling->reset();
+        if (clipperOversampling2x)
+            clipperOversampling2x->reset();
+        if (clipperOversampling4x)
+            clipperOversampling4x->reset();
         std::fill(rmsBuffer.begin(), rmsBuffer.end(), 0.0f);
         std::fill(autoMakeupBuffer.begin(), autoMakeupBuffer.end(), 0.0f);
         rmsIndex = 0;
@@ -252,6 +271,94 @@ private:
         gainReduction = juce::Decibels::gainToDecibels(envelopeState);
     }
 
+    void processClipper(juce::AudioBuffer<float>& buffer)
+    {
+        const int numSamples = buffer.getNumSamples();
+        const int numChannels = buffer.getNumChannels();
+        
+        float driveDb = smoothedClipperDrive.getNextValue();
+        float outputDb = smoothedClipperOutput.getNextValue();
+        float mix = smoothedClipperMix.getNextValue() * 0.01f; // 0-100% to 0-1
+        
+        float driveGain = juce::Decibels::decibelsToGain(driveDb);
+        float outputGain = juce::Decibels::decibelsToGain(outputDb);
+        
+        // Store dry signal for parallel mix
+        juce::AudioBuffer<float> dryBuffer(numChannels, numSamples);
+        for (int ch = 0; ch < numChannels; ++ch)
+            dryBuffer.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+        
+        auto processClipCurve = [this](float sample) -> float
+        {
+            switch (clipperCurve)
+            {
+                case 0: // tanh (smooth)
+                    return std::tanh(sample);
+                case 1: // atan (harder)
+                    return (2.0f / juce::MathConstants<float>::pi) * std::atan(sample * 1.5f);
+                case 2: // polynomial (x - x^3/3)
+                {
+                    float x = juce::jlimit(-1.5f, 1.5f, sample);
+                    return x - (x * x * x) / 3.0f;
+                }
+                default:
+                    return std::tanh(sample);
+            }
+        };
+        
+        if (clipperOversamplingFactor > 0)
+        {
+            // Apply oversampling
+            juce::dsp::AudioBlock<float> block(buffer);
+            auto* os = (clipperOversamplingFactor == 1) ? clipperOversampling2x.get() : clipperOversampling4x.get();
+            
+            auto oversampledBlock = os->processSamplesUp(block);
+            const int osNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
+            
+            for (int i = 0; i < osNumSamples; ++i)
+            {
+                for (size_t ch = 0; ch < oversampledBlock.getNumChannels(); ++ch)
+                {
+                    float sample = oversampledBlock.getSample(ch, i);
+                    sample *= driveGain;
+                    sample = processClipCurve(sample);
+                    sample *= outputGain;
+                    oversampledBlock.setSample(ch, i, sample);
+                }
+            }
+            
+            os->processSamplesDown(block);
+        }
+        else
+        {
+            // No oversampling
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                auto* data = buffer.getWritePointer(ch);
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    float sample = data[i];
+                    sample *= driveGain;
+                    sample = processClipCurve(sample);
+                    sample *= outputGain;
+                    data[i] = sample;
+                }
+            }
+        }
+        
+        // Parallel mix
+        if (mix < 0.999f)
+        {
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                auto* wet = buffer.getWritePointer(ch);
+                auto* dry = dryBuffer.getReadPointer(ch);
+                for (int i = 0; i < numSamples; ++i)
+                    wet[i] = dry[i] * (1.0f - mix) + wet[i] * mix;
+            }
+        }
+    }
+
     void processTruePeakLimiter(juce::AudioBuffer<float>& buffer)
     {
         const int numSamples = buffer.getNumSamples();
@@ -353,25 +460,18 @@ private:
         }
     }
 
-    void softClip(juce::AudioBuffer<float>& buffer)
-    {
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-        {
-            auto* data = buffer.getWritePointer(ch);
-            for (int i = 0; i < buffer.getNumSamples(); ++i)
-                data[i] = std::tanh(data[i] * 0.9f);
-        }
-    }
-
     juce::dsp::ProcessSpec spec;
     juce::dsp::DelayLine<float> lookaheadDelay{1024};
     juce::dsp::DelayLine<float> limiterLookahead{2048};
     juce::dsp::IIR::Filter<float> scHpf;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
+    std::unique_ptr<juce::dsp::Oversampling<float>> clipperOversampling2x;
+    std::unique_ptr<juce::dsp::Oversampling<float>> clipperOversampling4x;
     
     juce::SmoothedValue<float> smoothedThreshold, smoothedRatio, smoothedAttack, smoothedRelease;
     juce::SmoothedValue<float> smoothedKnee, smoothedMakeup, smoothedScHpf;
     juce::SmoothedValue<float> smoothedLimiterCeiling, smoothedLimiterRelease, smoothedLimiterKnee;
+    juce::SmoothedValue<float> smoothedClipperDrive, smoothedClipperOutput, smoothedClipperMix;
     
     std::vector<float> rmsBuffer, autoMakeupBuffer;
     int rmsWindowSize = 0, rmsIndex = 0;
@@ -380,4 +480,5 @@ private:
     float gainReduction = 0.0f, envelopeState = 0.0f, limiterEnvelope = 1.0f;
     float currentScHpf = 80.0f, lookaheadMs = 0.0f, limiterLookaheadMs = 5.0f;
     bool rmsMode = true, autoMakeupEnabled = false, limiterOversamplingEnabled = true;
+    int clipperCurve = 0, clipperOversamplingFactor = 2; // 0=off, 1=2x, 2=4x
 };

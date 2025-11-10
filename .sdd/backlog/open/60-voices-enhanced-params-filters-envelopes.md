@@ -1,6 +1,6 @@
 # 60 — Voices: Enhanced Parameters (Filters, Envelopes, Pan/Width)
 
-Read `.sdd/architect.md` and `.sdd/coding_rules.md` first.
+Read native coding rules and VST best practices first.
 
 Context
 - Spec: `.sdd/backlog/tasks/004-rehaul-sounds-implement.md` (§3.1 Filter Parameters, §3.2 Pan & Stereo)
@@ -8,7 +8,7 @@ Context
 
 Dependencies
 - Tickets 03–06 (base voices) — already implemented
-- Ticket 61 (parameter registry & UI mapping)
+- Ticket 61 (parameter mapping via APVTS & UI attachments)
 
 Scope
 - Filters per voice: LP/HP/BP 12/24 dB as appropriate; default cutoffs per voice
@@ -22,21 +22,20 @@ Acceptance Criteria
 - Each voice exposes new params with sensible defaults matching spec
 - Filters/envelopes modulate timbre as expected without zipper noise
 - Pan law constant-power; width collapses to mono at 0% and expands to 200%
-- Unit tests render parameter sweeps per voice (OfflineAudioContext) and assert energy shift consistent with cutoff/resonance changes
+- C++ unit tests render parameter sweeps per voice (offline buffer) and assert energy shift consistent with cutoff/resonance changes
 
 Implementation Steps
-1) Add filter/envelope modules under `src/audio/voices/common/`
-2) Update each voice class in `src/audio/voices/` to insert filter and apply env amount
-3) Implement `pan.ts` utility for constant-power pan and `stereo-width.ts` mid/side
-4) Parameter smoothing where needed (cutoff, resonance, drive)
-5) Tests: `tests/unit/voices/*-params.test.ts` with OfflineAudioContext
+1) Files (native VST3):
+   - `native/vst3/CR717/Source/dsp/voices/common/Filter.h/.cpp`, `Envelope.h/.cpp`, `Pan.h/.cpp`, `StereoWidth.h/.cpp`
+2) Update each voice in `native/vst3/CR717/Source/dsp/voices/` to insert filter and apply env amount
+3) Parameter smoothing where needed (cutoff, resonance, drive) via SmoothedValue
+4) Tests: `native/tests/unit/voices/*_params_tests.cpp`
 
 Affected Files
-- `src/audio/voices/common/filter.ts`, `envelope.ts`, `pan.ts`, `stereo-width.ts` (new)
-- `src/audio/voices/*` (augment)
-- `tests/unit/voices/*`
+- `native/vst3/CR717/Source/dsp/voices/common/*` (new)
+- `native/vst3/CR717/Source/dsp/voices/*` (augment)
+- `native/tests/unit/voices/*`
 
 Risks & Mitigations
 - CPU increase: reuse nodes per trigger; keep graph minimal; avoid allocations
 - Stability: clamp resonance/Q to avoid self-oscillation unless intended
-
